@@ -18,6 +18,6 @@ stbvorbis.decode(buf: ArrayBuffer|Uint8Array): {data: []Float32Array, sampleRate
 
 `decode` decodes the given Ogg/Vorbis data and returns the result.
 
-The result includes `data` field and `sampleRate` field. `data` is an array of `Float32Array` that represents decoded stream for each data. `sampleRate` represents the sample rate like 44100.
+The result includes `data` field and `sampleRate` field. `data` is an array of `Float32Array` that represents decoded stream for each channel. `sampleRate` represents the sample rate like 44100.
 
 `decode` throws an exception when decoding fails.
