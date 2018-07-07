@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var stbvorbis = {};
-
 (Module => {
   var decodeMemory = null;
   var initialized = null;
@@ -102,3 +100,5 @@ var stbvorbis = {};
     return result;
   };
 })(Module);
+
+})(); // End of the scope.
