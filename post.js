@@ -55,7 +55,7 @@
   }
 
   stbvorbis.decode = (buf) => {
-    return new Promise(resolve2 => {
+    return new Promise((resolve, reject) => {
       initializationP.then(() => {
         let copiedBuf = null;
         if (buf instanceof ArrayBuffer) {
@@ -68,7 +68,8 @@
         const outputPtr = Module._malloc(4);
         const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
         if (length < 0) {
-          throw 'stbvorbis decode failed: ' + length;
+          reject(new Error('stbvorbis decode failed: ' + length));
+          return;
         }
         const channels = ptrToInt32(channelsPtr);
         
@@ -92,7 +93,7 @@
         Module._free(ptrToInt32(outputPtr));
         Module._free(outputPtr);
 
-        resolve2(result);
+        resolve(result);
       });
     });
   };

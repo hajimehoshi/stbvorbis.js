@@ -14,4 +14,4 @@ stbvorbis.decode(buf: ArrayBuffer|Uint8Array): Promise
 
 The promise result includes `data` field and `sampleRate` field. `data` is an array of `Float32Array` that represents decoded stream for each channel. `sampleRate` represents the sample rate like 44100.
 
-`decode` throws an exception when decoding fails.
+The promise is rejected when decoding is failed.
