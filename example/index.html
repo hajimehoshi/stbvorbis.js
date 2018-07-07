@@ -9,6 +9,7 @@
   console.log('length:', result.data[0].length);
   console.log('sampleRate:', result.sampleRate);
 
+  var AudioContext = window.AudioContext || window.webkitAudioContext;
   const context = new AudioContext();
   const buffer = context.createBuffer(result.data.length, result.data[0].length, result.sampleRate);
   for (let i = 0; i < channels; i++) {
