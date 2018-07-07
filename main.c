@@ -28,43 +28,45 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
   int data_len = 0;
   int offset = 0;
   int total = limit;
-  float* data = (float*)malloc(total * sizeof(*data));
+  float** data = (float**)malloc(v->channels * sizeof(float*));
   if (data == NULL) {
     stb_vorbis_close(v);
     return -2;
   }
+  for (int i = 0; i < v->channels; i++) {
+    data[i] = (float*)malloc(total * sizeof(float));
+    if (data[i] == NULL) {
+      // TODO: Free allocated objects correctly?
+      stb_vorbis_close(v);
+      return -2;
+    }
+  }
+
   for (;;) {
-    // TODO: Not to use interleaved version.
-    int n = stb_vorbis_get_samples_float_interleaved(v, v->channels, data+offset, total-offset);
+    float* tmp[v->channels];
+    for (int i = 0; i < v->channels; i++) {
+      tmp[i] = data[i] + data_len;
+    }
+    int n = stb_vorbis_get_samples_float(v, v->channels, tmp, total-data_len);
     if (n == 0) {
       break;
     }
     data_len += n;
-    offset += n * v->channels;
-    if (offset + limit > total) {
-      float* data2;
+    if (data_len + limit > total) {
       total *= 2;
-      data2 = (float*)realloc(data, total * sizeof(*data));
-      if (data2 == NULL) {
-        free(data);
-        stb_vorbis_close(v);
-        return -2;
+      for (int i = 0; i < v->channels; i++) {
+        float* newData = (float*)realloc(data[i], total * sizeof(float));
+        if (newData == NULL) {
+          // TODO: Free allocated objects correctly?
+          stb_vorbis_close(v);
+          return -2;
+        }
+        data[i] = newData;
       }
-      data = data2;
     }
   }
   stb_vorbis_close(v);
 
-  *output = (float**)malloc(v->channels * sizeof(float*));
-  for (int i = 0; i < v->channels; i++) {
-    (*output)[i] = (float*)malloc(data_len * sizeof(float));
-  }
-  for (int i = 0; i < data_len; i++) {
-    for (int j = 0; j < v->channels; j++) {
-      (*output)[j][i] = data[v->channels*i+j];
-    }
-  }
-  free(data);
-
+  *output = data;
   return data_len;
 }
