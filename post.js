@@ -13,41 +13,14 @@
 // limitations under the License.
 
 (Module => {
-  const INITIALIZING_PHASE_NOT_STARTED  = 0;
-  const INITIALIZING_PHASE_INITIALIZING = 1;
-  const INITIALIZING_PHASE_INITIALIZED  = 2;
-
   var decodeMemory = null;
-  var initializingPhase = INITIALIZING_PHASE_NOT_STARTED;
-  var initializingResolveQueue = [];
 
   const initializationP = new Promise(resolve => {
-    initializingResolveQueue.push(resolve);
-
-    switch (initializingPhase) {
-    case INITIALIZING_PHASE_NOT_STARTED:
-      Module.onRuntimeInitialized = () => {
-        decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                    ['number', 'number', 'number', 'number', 'number']);
-        for (const resolve of initializingResolveQueue) {
-          resolve();
-        }
-        initializingResolveQueue = [];
-        initializingPhase = INITIALIZING_PHASE_INITIALIZED;
-      };
-      initializingPhase = INITIALIZING_PHASE_INITIALIZING;
-      break
-
-    case INITIALIZING_PHASE_INITIALIZING:
-      break;
-
-    case INITIALIZING_PHASE_INITIALIZED:
-      for (const resolve of initializingResolveQueue) {
-        resolve();
-      }
-      initializingResolveQueue = [];
-      break;
-    }
+    Module.onRuntimeInitialized = () => {
+      decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
+                                  ['number', 'number', 'number', 'number', 'number']);
+      resolve();
+    };
   });
 
   function arrayBufferToHeap(buffer, byteOffset, byteLength) {
