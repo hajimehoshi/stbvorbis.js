@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<script src="./stbvorbis.js"></script>
+<script>
+(async () => {
+  await stbvorbis.initialize();
+  const resp = await fetch('./ragtime.ogg');
+  const buf = await resp.arrayBuffer();
+  const result = stbvorbis.decode(buf);
+  console.log(result);
+})();
+</script>
