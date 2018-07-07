@@ -18,7 +18,7 @@
   const INITIALIZING_PHASE_INITIALIZED  = 2;
 
   var decodeMemory = null;
-  var initializingPhase = INITIALIZING_PHASE_NONE;
+  var initializingPhase = INITIALIZING_PHASE_NOT_STARTED;
   var initializingResolveQueue = [];
 
   const initializationP = new Promise(resolve => {
@@ -35,7 +35,6 @@
         initializingResolveQueue = [];
         initializingPhase = INITIALIZING_PHASE_INITIALIZED;
       };
-      Module.run();
       initializingPhase = INITIALIZING_PHASE_INITIALIZING;
       break
 
