@@ -3,9 +3,26 @@
 <script>
 (async () => {
   await stbvorbis.initialize();
-  const resp = await fetch('./ragtime.ogg');
-  const buf = await resp.arrayBuffer();
+  const buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
   const result = stbvorbis.decode(buf);
-  console.log(result);
+  const channels = result.data.length;
+  console.log('channels:', channels);
+  console.log('length:', result.data[0].length);
+  console.log('sampleRate:', result.sampleRate);
+
+  const context = new AudioContext();
+  const buffer = context.createBuffer(result.data.length, result.data[0].length, result.sampleRate);
+  for (let i = 0; i < channels; i++) {
+    // copyToChannel might not be available on Safari.
+    if (buffer.copyToChannel) {
+      buffer.copyToChannel(result.data[i], i);
+    } else {
+      buffer.getChannelData(i).set(result.data[i]);
+    }
+  }
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(context.destination);
+  source.start(0);
 })();
 </script>

@@ -5466,7 +5466,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // Added by Hajime Hoshi
 
-int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int *sample_rate, float **output) {
+int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int *sample_rate, float ***output) {
   int error = 0;
   stb_vorbis* v = stb_vorbis_open_memory(mem, len, &error, NULL);
   if (v == NULL) {
@@ -5486,7 +5486,7 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
     return -2;
   }
   for (;;) {
-    // TODO: Not to use interleaved
+    // TODO: Not to use interleaved version.
     int n = stb_vorbis_get_samples_float_interleaved(v, v->channels, data+offset, total-offset);
     if (n == 0) {
       break;
@@ -5505,7 +5505,18 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
       data = data2;
     }
   }
-  *output = data;
   stb_vorbis_close(v);
+
+  *output = (float**)malloc(v->channels * sizeof(float*));
+  for (int i = 0; i < v->channels; i++) {
+    (*output)[i] = (float*)malloc(data_len * sizeof(float));
+  }
+  for (int i = 0; i < data_len; i++) {
+    for (int j = 0; j < v->channels; j++) {
+      (*output)[j][i] = data[v->channels*i+j];
+    }
+  }
+  free(data);
+
   return data_len;
 }

@@ -50,6 +50,13 @@ var stbvorbis = {};
     return a[0];
   }
 
+  function ptrToInt32s(ptr, length) {
+    const buf = new ArrayBuffer(length * Int32Array.BYTES_PER_ELEMENT);
+    const copied = new Int32Array(buf);
+    copied.set(new Int32Array(Module.HEAPU8.buffer, ptr, length));
+    return copied;
+  }
+
   function ptrToFloat32s(ptr, length) {
     const buf = new ArrayBuffer(length * Float32Array.BYTES_PER_ELEMENT);
     const copied = new Float32Array(buf);
@@ -72,15 +79,24 @@ var stbvorbis = {};
       throw 'stbvorbis decode failed: ' + length;
     }
     const channels = ptrToInt32(channelsPtr);
+    
+    let data = [];
+    const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+    for (let ptr of dataPtrs) {
+      data.push(ptrToFloat32s(ptr, length));
+    }
     const result = {
-      data:       ptrToFloat32s(ptrToInt32(outputPtr), length * channels),
-      channels:   channels,
+      data:       data,
       sampleRate: ptrToInt32(sampleRatePtr),
     };
 
     Module._free(copiedBuf.byteOffset);
     Module._free(channelsPtr);
     Module._free(sampleRatePtr);
+
+    for (let ptr of dataPtrs) {
+      Module._free(ptr);
+    }
     Module._free(ptrToInt32(outputPtr));
     Module._free(outputPtr);
     return result;
