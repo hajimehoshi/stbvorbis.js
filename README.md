@@ -4,6 +4,8 @@ A JavaScript port of [stb_vorbis.c](https://github.com/nothings/stb).
 
 ## API
 
+### `initialize`
+
 ```
 stbvorbis.initialize(): Promise
 ```
@@ -11,6 +13,8 @@ stbvorbis.initialize(): Promise
 `initialize` initializes this library. `initialize` must be called once before the usage of this library.
 
 `initialize` returns a promise that is resolved when initialization is done.
+
+### `decode`
 
 ```
 stbvorbis.decode(buf: ArrayBuffer|Uint8Array): {data: []Float32Array, sampleRate: number}
