@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <script src="./stbvorbis.js"></script>
 <script>
-(async () => {
+var context = null;
+
+async function initialize() {
   const buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
   const result = await stbvorbis.decode(buf);
   const channels = result.data.length;
@@ -10,7 +12,7 @@
   console.log('sampleRate:', result.sampleRate);
 
   var AudioContext = window.AudioContext || window.webkitAudioContext;
-  const context = new AudioContext();
+  context = new AudioContext();
   const buffer = context.createBuffer(result.data.length, result.data[0].length, result.sampleRate);
   for (let i = 0; i < channels; i++) {
     // copyToChannel might not be available on Safari.
@@ -24,5 +26,25 @@
   source.buffer = buffer;
   source.connect(context.destination);
   source.start(0);
-})();
+
+  button.disabled = false;
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await initialize()
+  document.getElementById('button').addEventListener('click', () => {
+    const button = document.getElementById('button');
+    switch (button.innerText) {
+    case 'Resume':
+      context.resume();
+      button.innerText = 'Suspend';
+      break;
+    case 'Suspend':
+      context.suspend();
+      button.innerText = 'Resume';
+      break;
+    }
+  });
+});
 </script>
+<button id="button" disabled>Suspend</button>
