@@ -2,7 +2,6 @@
 <script src="./stbvorbis.js"></script>
 <script>
 (async () => {
-  await stbvorbis.initialize();
   const buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
   const result = await stbvorbis.decode(buf);
   const channels = result.data.length;

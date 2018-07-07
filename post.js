@@ -13,23 +13,43 @@
 // limitations under the License.
 
 (Module => {
+  const INITIALIZING_PHASE_NOT_STARTED  = 0;
+  const INITIALIZING_PHASE_INITIALIZING = 1;
+  const INITIALIZING_PHASE_INITIALIZED  = 2;
+
   var decodeMemory = null;
-  var initialized = null;
+  var initializingPhase = INITIALIZING_PHASE_NONE;
+  var initializingResolveQueue = [];
 
-  stbvorbis.initialize = () => {
-    Module.run();
-    return new Promise(resolve => {
-      initialized = resolve;
-    });
-  };
+  const initializationP = new Promise(resolve => {
+    initializingResolveQueue.push(resolve);
 
-  Module.onRuntimeInitialized = () => {
-    decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                ['number', 'number', 'number', 'number', 'number']);
-    if (initialized) {
-      initialized();
+    switch (initializingPhase) {
+    case INITIALIZING_PHASE_NOT_STARTED:
+      Module.onRuntimeInitialized = () => {
+        decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
+                                    ['number', 'number', 'number', 'number', 'number']);
+        for (const resolve of initializingResolveQueue) {
+          resolve();
+        }
+        initializingResolveQueue = [];
+        initializingPhase = INITIALIZING_PHASE_INITIALIZED;
+      };
+      Module.run();
+      initializingPhase = INITIALIZING_PHASE_INITIALIZING;
+      break
+
+    case INITIALIZING_PHASE_INITIALIZING:
+      break;
+
+    case INITIALIZING_PHASE_INITIALIZED:
+      for (const resolve of initializingResolveQueue) {
+        resolve();
+      }
+      initializingResolveQueue = [];
+      break;
     }
-  }
+  });
 
   function arrayBufferToHeap(buffer, byteOffset, byteLength) {
     const ptr = Module._malloc(byteLength);
@@ -63,43 +83,45 @@
   }
 
   stbvorbis.decode = (buf) => {
-    return new Promise(resolve => {
-      let copiedBuf = null;
-      if (buf instanceof ArrayBuffer) {
-        copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
-      } else if (buf instanceof TypedArray) {
-        copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
-      }
-      const channelsPtr = Module._malloc(4);
-      const sampleRatePtr = Module._malloc(4);
-      const outputPtr = Module._malloc(4);
-      const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
-      if (length < 0) {
-        throw 'stbvorbis decode failed: ' + length;
-      }
-      const channels = ptrToInt32(channelsPtr);
-      
-      let data = [];
-      const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-      for (let ptr of dataPtrs) {
-        data.push(ptrToFloat32s(ptr, length));
-      }
-      const result = {
-        data:       data,
-        sampleRate: ptrToInt32(sampleRatePtr),
-      };
+    return new Promise(resolve2 => {
+      initializationP.then(() => {
+        let copiedBuf = null;
+        if (buf instanceof ArrayBuffer) {
+          copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
+        } else if (buf instanceof TypedArray) {
+          copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
+        }
+        const channelsPtr = Module._malloc(4);
+        const sampleRatePtr = Module._malloc(4);
+        const outputPtr = Module._malloc(4);
+        const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
+        if (length < 0) {
+          throw 'stbvorbis decode failed: ' + length;
+        }
+        const channels = ptrToInt32(channelsPtr);
+        
+        let data = [];
+        const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+        for (const ptr of dataPtrs) {
+          data.push(ptrToFloat32s(ptr, length));
+        }
+        const result = {
+          data:       data,
+          sampleRate: ptrToInt32(sampleRatePtr),
+        };
 
-      Module._free(copiedBuf.byteOffset);
-      Module._free(channelsPtr);
-      Module._free(sampleRatePtr);
+        Module._free(copiedBuf.byteOffset);
+        Module._free(channelsPtr);
+        Module._free(sampleRatePtr);
 
-      for (let ptr of dataPtrs) {
-        Module._free(ptr);
-      }
-      Module._free(ptrToInt32(outputPtr));
-      Module._free(outputPtr);
+        for (const ptr of dataPtrs) {
+          Module._free(ptr);
+        }
+        Module._free(ptrToInt32(outputPtr));
+        Module._free(outputPtr);
 
-      resolve(result);
+        resolve2(result);
+      });
     });
   };
 })(Module);
