@@ -17,11 +17,11 @@ stbvorbis.initialize(): Promise
 ### `decode`
 
 ```
-stbvorbis.decode(buf: ArrayBuffer|Uint8Array): {data: []Float32Array, sampleRate: number}
+stbvorbis.decode(buf: ArrayBuffer|Uint8Array): Promise
 ```
 
-`decode` decodes the given Ogg/Vorbis data and returns the result.
+`decode` decodes the given Ogg/Vorbis data and returns a promise.
 
-The result includes `data` field and `sampleRate` field. `data` is an array of `Float32Array` that represents decoded stream for each channel. `sampleRate` represents the sample rate like 44100.
+The promise result includes `data` field and `sampleRate` field. `data` is an array of `Float32Array` that represents decoded stream for each channel. `sampleRate` represents the sample rate like 44100.
 
 `decode` throws an exception when decoding fails.
