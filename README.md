@@ -1,6 +1,7 @@
 # stbvorbis.js
 
 A JavaScript port of [stb_vorbis.c](https://github.com/nothings/stb).
+Locate `build/stbvorbis.js` and `build/stbvorbis_worker_wasm.js` on the same directory, and import ONLY `stbvorbis.js` by `<script>`.
 
 ## API
 
