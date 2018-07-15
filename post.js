@@ -104,7 +104,7 @@ let id = 0;
 const worker = new Worker(URL.createObjectURL(new Blob([ `(${decodeWorker.toString()})();` ], { type: "text/javascript" })));
 stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
   const myID = id;
-  worker.addEventListener('message', function onmessage(event) {
+  const onmessage = event => {
     const result = event.data;
     if (result.id === myID) {
       delete result.id;
@@ -115,7 +115,8 @@ stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
       }
       resolve(result);
     }
-  });
+  };
+  worker.addEventListener('message', onmessage);
   worker.postMessage({id, arrayBuffer}, [arrayBuffer instanceof Uint8Array ? arrayBuffer.buffer : arrayBuffer]);
   id++;
 });
