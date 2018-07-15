@@ -56,7 +56,7 @@
 
   onmessage = async event => {
     await initializationP;
-    const buf = event.data.arrayBuffer;
+    const buf = event.data.buf;
     let copiedBuf = null;
     if (buf instanceof ArrayBuffer) {
       copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
@@ -102,7 +102,7 @@
 
 let requestId = 0;
 const worker = new Worker(URL.createObjectURL(new Blob([ `(${decodeWorker.toString()})();` ], { type: "text/javascript" })));
-stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
+stbvorbis.decode = buf => new Promise((resolve, reject) => {
   const currentId = requestId;
   const onmessage = event => {
     const result = event.data;
@@ -118,7 +118,7 @@ stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
     resolve(result);
   };
   worker.addEventListener('message', onmessage);
-  worker.postMessage({requestId, arrayBuffer}, [arrayBuffer instanceof Uint8Array ? arrayBuffer.buffer : arrayBuffer]);
+  worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
   requestId++;
 });
 
