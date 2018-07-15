@@ -106,10 +106,10 @@ stbvorbis.decode = buf => new Promise((resolve, reject) => {
   const currentId = requestId;
   const onmessage = event => {
     const result = event.data;
-    if (result.requestId !== currentId) {
+    if (result.id !== currentId) {
       return;
     }
-    delete result.requestId;
+    delete result.id;
     worker.removeEventListener('message', onmessage);
     if (result.error) {
       reject(result.error);
