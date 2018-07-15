@@ -106,15 +106,16 @@ stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
   const myID = id;
   const onmessage = event => {
     const result = event.data;
-    if (result.id === myID) {
-      delete result.id;
-      worker.removeEventListener('message', onmessage);
-      if (result.error) {
-        reject(result.error);
-        return;
-      }
-      resolve(result);
+    if (result.id !== myID) {
+      return;
     }
+    delete result.id;
+    worker.removeEventListener('message', onmessage);
+    if (result.error) {
+      reject(result.error);
+      return;
+    }
+    resolve(result);
   };
   worker.addEventListener('message', onmessage);
   worker.postMessage({id, arrayBuffer}, [arrayBuffer instanceof Uint8Array ? arrayBuffer.buffer : arrayBuffer]);
