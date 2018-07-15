@@ -5,5 +5,5 @@ emcc -Os -o main.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_STDIO 
      -s ALLOW_MEMORY_GROWTH=1 \
      main.c
 go run genpre.go < main.wasm > pre.js
-cat pre.js main.js post.js > /tmp/stbvorbis_worker_wasm.js
-uglifyjs /tmp/stbvorbis_worker_wasm.js > ./build/stbvorbis_worker_wasm.js
+cat pre.js main.js post.js > /tmp/stbvorbis.js
+uglifyjs /tmp/stbvorbis.js > ./build/stbvorbis.js
