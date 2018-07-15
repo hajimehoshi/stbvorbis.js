@@ -100,16 +100,16 @@
 
 } // End of the function decodeWorker().
 
-let id = 0;
+let requestId = 0;
 const worker = new Worker(URL.createObjectURL(new Blob([ `(${decodeWorker.toString()})();` ], { type: "text/javascript" })));
 stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
-  const myID = id;
+  const currentId = requestId;
   const onmessage = event => {
     const result = event.data;
-    if (result.id !== myID) {
+    if (result.requestId !== currentId) {
       return;
     }
-    delete result.id;
+    delete result.requestId;
     worker.removeEventListener('message', onmessage);
     if (result.error) {
       reject(result.error);
@@ -118,8 +118,8 @@ stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
     resolve(result);
   };
   worker.addEventListener('message', onmessage);
-  worker.postMessage({id, arrayBuffer}, [arrayBuffer instanceof Uint8Array ? arrayBuffer.buffer : arrayBuffer]);
-  id++;
+  worker.postMessage({requestId, arrayBuffer}, [arrayBuffer instanceof Uint8Array ? arrayBuffer.buffer : arrayBuffer]);
+  requestId++;
 });
 
 })(); // End of the scope.
