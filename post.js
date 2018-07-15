@@ -60,7 +60,7 @@
       let copiedBuf = null;
       if (buf instanceof ArrayBuffer) {
         copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
-      } else if (buf instanceof TypedArray) {
+      } else if (buf instanceof Uint8Array) {
         copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
       }
       const channelsPtr = Module._malloc(4);
