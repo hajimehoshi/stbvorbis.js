@@ -60,7 +60,7 @@
     let copiedBuf = null;
     if (buf instanceof ArrayBuffer) {
       copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
-    } else if (buf instanceof TypedArray) {
+    } else if (buf instanceof Uint8Array) {
       copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
     }
     const channelsPtr = Module._malloc(4);
@@ -111,9 +111,9 @@ stbvorbis.decode = arrayBuffer => new Promise((resolve, reject) => {
       worker.removeEventListener('message', onmessage);
       if (result.error) {
         reject(result.error);
-      } else {
-        resolve(result);
+        return;
       }
+      resolve(result);
     }
   });
   worker.postMessage({id, arrayBuffer}, [arrayBuffer instanceof Uint8Array ? arrayBuffer.buffer : arrayBuffer]);
