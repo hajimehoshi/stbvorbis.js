@@ -68,7 +68,10 @@
     const outputPtr = Module._malloc(4);
     const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
     if (length < 0) {
-      postMessage({ id: event.data.id, error: new Error('stbvorbis decode failed: ' + length) });
+      postMessage({
+        id:    event.data.id,
+        error: new Error('stbvorbis decode failed: ' + length),
+      });
       return;
     }
     const channels = ptrToInt32(channelsPtr);
@@ -109,13 +112,15 @@ stbvorbis.decode = buf => new Promise((resolve, reject) => {
     if (result.id !== currentId) {
       return;
     }
-    delete result.id;
     worker.removeEventListener('message', onmessage);
     if (result.error) {
       reject(result.error);
       return;
     }
-    resolve(result);
+    resolve({
+      data:       result.data,
+      sampleRate: result.sampleRate,
+    });
   };
   worker.addEventListener('message', onmessage);
   worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
