@@ -13,15 +13,7 @@
 // limitations under the License.
 
 (Module => {
-  var decodeMemory = null;
-
-  const initializationP = new Promise(resolve => {
-    Module.onRuntimeInitialized = () => {
-      decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                  ['number', 'number', 'number', 'number', 'number']);
-      resolve();
-    };
-  });
+  var decodeMemory = Module['_stb_vorbis_decode_memory_float'];
 
   function arrayBufferToHeap(buffer, byteOffset, byteLength) {
     const ptr = Module._malloc(byteLength);
@@ -54,8 +46,7 @@
     return copied;
   }
 
-  onmessage = async event => {
-    await initializationP;
+  onmessage = event => {
     const buf = event.data.buf;
     let copiedBuf = null;
     if (buf instanceof ArrayBuffer) {
@@ -100,41 +91,3 @@
     postMessage(result, result.data.map(array => array.buffer));
   };
 })(Module);
-
-} // End of the function decodeWorker().
-
-let workerUrl = '';
-if (typeof window.WebAssembly === 'object') {
-  workerUrl = URL.createObjectURL(new Blob([ `(${decodeWorker.toString()})();` ], { type: "text/javascript" }));
-} else {
-  const scriptPath = document.currentScript.src;
-  const directoryPath = scriptPath.slice(0, scriptPath.lastIndexOf('/') + 1);
-  workerUrl = directoryPath + 'stbvorbis_asm.js';
-}
-
-const worker = new Worker(workerUrl);
-let requestId = 0;
-
-stbvorbis.decode = buf => new Promise((resolve, reject) => {
-  const currentId = requestId;
-  const onmessage = event => {
-    const result = event.data;
-    if (result.id !== currentId) {
-      return;
-    }
-    worker.removeEventListener('message', onmessage);
-    if (result.error) {
-      reject(result.error);
-      return;
-    }
-    resolve({
-      data:       result.data,
-      sampleRate: result.sampleRate,
-    });
-  };
-  worker.addEventListener('message', onmessage);
-  worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
-  requestId++;
-});
-
-})(); // End of the scope.
