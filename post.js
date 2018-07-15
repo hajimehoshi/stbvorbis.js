@@ -55,46 +55,45 @@
   }
 
   stbvorbis.decode = (buf) => {
-    return new Promise((resolve, reject) => {
-      initializationP.then(() => {
-        let copiedBuf = null;
-        if (buf instanceof ArrayBuffer) {
-          copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
-        } else if (buf instanceof TypedArray) {
-          copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
-        }
-        const channelsPtr = Module._malloc(4);
-        const sampleRatePtr = Module._malloc(4);
-        const outputPtr = Module._malloc(4);
-        const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
-        if (length < 0) {
-          reject(new Error('stbvorbis decode failed: ' + length));
-          return;
-        }
-        const channels = ptrToInt32(channelsPtr);
-        
-        let data = [];
-        const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-        for (const ptr of dataPtrs) {
-          data.push(ptrToFloat32s(ptr, length));
-        }
-        const result = {
-          data:       data,
-          sampleRate: ptrToInt32(sampleRatePtr),
-        };
+    return new Promise(async (resolve, reject) => {
+      await initializationP;
+      let copiedBuf = null;
+      if (buf instanceof ArrayBuffer) {
+        copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
+      } else if (buf instanceof TypedArray) {
+        copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
+      }
+      const channelsPtr = Module._malloc(4);
+      const sampleRatePtr = Module._malloc(4);
+      const outputPtr = Module._malloc(4);
+      const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
+      if (length < 0) {
+        reject(new Error('stbvorbis decode failed: ' + length));
+        return;
+      }
+      const channels = ptrToInt32(channelsPtr);
+      
+      let data = [];
+      const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+      for (const ptr of dataPtrs) {
+        data.push(ptrToFloat32s(ptr, length));
+      }
+      const result = {
+        data:       data,
+        sampleRate: ptrToInt32(sampleRatePtr),
+      };
 
-        Module._free(copiedBuf.byteOffset);
-        Module._free(channelsPtr);
-        Module._free(sampleRatePtr);
+      Module._free(copiedBuf.byteOffset);
+      Module._free(channelsPtr);
+      Module._free(sampleRatePtr);
 
-        for (const ptr of dataPtrs) {
-          Module._free(ptr);
-        }
-        Module._free(ptrToInt32(outputPtr));
-        Module._free(outputPtr);
+      for (const ptr of dataPtrs) {
+        Module._free(ptr);
+      }
+      Module._free(ptrToInt32(outputPtr));
+      Module._free(outputPtr);
 
-        resolve(result);
-      });
+      resolve(result);
     });
   };
 })(Module);
