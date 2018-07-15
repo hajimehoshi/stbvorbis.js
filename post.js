@@ -54,48 +54,72 @@
     return copied;
   }
 
-  stbvorbis.decode = (buf) => {
-    return new Promise(async (resolve, reject) => {
-      await initializationP;
-      let copiedBuf = null;
-      if (buf instanceof ArrayBuffer) {
-        copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
-      } else if (buf instanceof Uint8Array) {
-        copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
-      }
-      const channelsPtr = Module._malloc(4);
-      const sampleRatePtr = Module._malloc(4);
-      const outputPtr = Module._malloc(4);
-      const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
-      if (length < 0) {
-        reject(new Error('stbvorbis decode failed: ' + length));
-        return;
-      }
-      const channels = ptrToInt32(channelsPtr);
-      
-      let data = [];
-      const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-      for (const ptr of dataPtrs) {
-        data.push(ptrToFloat32s(ptr, length));
-      }
-      const result = {
-        data:       data,
-        sampleRate: ptrToInt32(sampleRatePtr),
-      };
+  onmessage = async event => {
+    await initializationP;
+    const buf = event.data.buf;
+    let copiedBuf = null;
+    if (buf instanceof ArrayBuffer) {
+      copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
+    } else if (buf instanceof Uint8Array) {
+      copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
+    }
+    const channelsPtr = Module._malloc(4);
+    const sampleRatePtr = Module._malloc(4);
+    const outputPtr = Module._malloc(4);
+    const length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
+    if (length < 0) {
+      postMessage({ id: event.data.id, error: new Error('stbvorbis decode failed: ' + length) });
+      return;
+    }
+    const channels = ptrToInt32(channelsPtr);
+    
+    let data = [];
+    const dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+    for (const ptr of dataPtrs) {
+      data.push(ptrToFloat32s(ptr, length));
+    }
+    const result = {
+      id:         event.data.id,
+      data:       data,
+      sampleRate: ptrToInt32(sampleRatePtr),
+    };
 
-      Module._free(copiedBuf.byteOffset);
-      Module._free(channelsPtr);
-      Module._free(sampleRatePtr);
+    Module._free(copiedBuf.byteOffset);
+    Module._free(channelsPtr);
+    Module._free(sampleRatePtr);
 
-      for (const ptr of dataPtrs) {
-        Module._free(ptr);
-      }
-      Module._free(ptrToInt32(outputPtr));
-      Module._free(outputPtr);
+    for (const ptr of dataPtrs) {
+      Module._free(ptr);
+    }
+    Module._free(ptrToInt32(outputPtr));
+    Module._free(outputPtr);
 
-      resolve(result);
-    });
+    postMessage(result, result.data.map(array => array.buffer));
   };
 })(Module);
+
+} // End of the function decodeWorker().
+
+let requestId = 0;
+const worker = new Worker(URL.createObjectURL(new Blob([ `(${decodeWorker.toString()})();` ], { type: "text/javascript" })));
+stbvorbis.decode = buf => new Promise((resolve, reject) => {
+  const currentId = requestId;
+  const onmessage = event => {
+    const result = event.data;
+    if (result.requestId !== currentId) {
+      return;
+    }
+    delete result.requestId;
+    worker.removeEventListener('message', onmessage);
+    if (result.error) {
+      reject(result.error);
+      return;
+    }
+    resolve(result);
+  };
+  worker.addEventListener('message', onmessage);
+  worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
+  requestId++;
+});
 
 })(); // End of the scope.

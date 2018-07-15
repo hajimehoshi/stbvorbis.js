@@ -33,6 +33,7 @@ func run() error {
 	fmt.Println("")
 	fmt.Println("var stbvorbis = typeof stbvorbis !== 'undefined' ? stbvorbis : {};")
 	fmt.Println("(() => { // Begin of the scope.")
+	fmt.Println("function decodeWorker() { // Begin of function decodeWorker().")
 	fmt.Println("var Module = typeof Module !== 'undefined' ? Module : {};")
 	fmt.Printf("Module['wasmBinary'] = Uint8Array.from(atob(%q), c => c.charCodeAt(0));\n", base64.StdEncoding.EncodeToString(bin))
 	return nil
