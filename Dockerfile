@@ -11,6 +11,6 @@ ENV PATH "/usr/local/go/bin:${PATH}"
 
 # Install npm
 RUN apt-get install -y nodejs npm
-RUN npm install -g uglify-es@3.3.9
+RUN npm install -g uglify-js@3.4.4
 
 WORKDIR /work
