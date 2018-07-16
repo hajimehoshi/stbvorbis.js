@@ -67,6 +67,19 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
   }
   stb_vorbis_close(v);
 
+  // Clamp the data not to cause noises.
+  for (int i = 0; i < v->channels; i++) {
+    float* samples = data[i];
+    for (int j = 0; j < data_len; j++)  {
+      float sample = samples[j];
+      if (sample > 1.0f) {
+        samples[j] = 1.0f;
+      } else if (sample < -1.0f) {
+        samples[j] = -1.0f;
+      }
+    }
+  }
+
   *output = data;
   return data_len;
 }
