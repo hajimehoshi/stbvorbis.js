@@ -5,7 +5,7 @@ emcc -Os -o main.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_STDIO 
      -s ALLOW_MEMORY_GROWTH=1 \
      main.c
 go run genpre.go < main.wasm > pre.js
-cat pre.js main.js post.js > /tmp/stbvorbis.js
+cat pre.js main.js post.js api.js > /tmp/stbvorbis.js
 uglifyjs /tmp/stbvorbis.js > ./build/stbvorbis.js
 
 emcc -Os -o asm.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_STDIO \
@@ -14,5 +14,5 @@ emcc -Os -o asm.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_STDIO \
      -s ALLOW_MEMORY_GROWTH=1 \
      --memory-init-file 0 \
      main.c
-cat asm.js post_asm.js > /tmp/stbvorbis_asm.js
+cat asm.js post.js > /tmp/stbvorbis_asm.js
 uglifyjs /tmp/stbvorbis_asm.js > ./build/stbvorbis_asm.js
