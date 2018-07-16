@@ -81,7 +81,7 @@
       
       var data = [];
       var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-      for (var i = 0; i < dataPtrs; i++) {
+      for (var i = 0; i < dataPtrs.length; i++) {
         data.push(ptrToFloat32s(dataPtrs[i], length));
       }
       var result = {
@@ -94,7 +94,7 @@
       Module._free(channelsPtr);
       Module._free(sampleRatePtr);
 
-      for (var i = 0; i < dataPtrs; i++) {
+      for (var i = 0; i < dataPtrs.length; i++) {
         Module._free(dataPtrs[i]);
       }
       Module._free(ptrToInt32(outputPtr));
