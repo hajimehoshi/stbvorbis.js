@@ -8,7 +8,7 @@ Install [Docker](https://www.docker.com/) and run `build.sh`.
 
 Copy `build/stbvorbis.js` to your file server and load it via a script tag.
 
-This library uses WebAssembly. If you want to use stbvorbis.js at browsers that do not support WebAssembly (e.g. iOS Safari 8-10), copy `build/stbvorbis_asm.js` to the same directory as `build/stbvorbis.js` so that asm.js version is used as fallback.
+This library uses WebAssembly. If you want to use stbvorbis.js at browsers that do not support WebAssembly (e.g. iOS 9 Safari), copy `build/stbvorbis_asm.js` to the same directory as `build/stbvorbis.js` so that asm.js version is used as fallback.
 
 ## API
 
