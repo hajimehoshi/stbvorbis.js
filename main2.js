@@ -57,7 +57,7 @@
     return copied;
   }
 
-  onmessage = async event => {
+  self.addEventListener('message', async event => {
     const decodeMemory = await initializationP;
     const buf = event.data.buf;
     let copiedBuf = null;
@@ -101,5 +101,5 @@
     Module._free(outputPtr);
 
     postMessage(result, result.data.map(array => array.buffer));
-  };
+  });
 })(Module);
