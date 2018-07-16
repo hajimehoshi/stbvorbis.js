@@ -2,7 +2,6 @@ FROM apiaryio/emcc:1.37
 
 RUN apt-get clean
 RUN apt-get update
-RUN apt-get -qq update
 
 # Install Go
 RUN apt-get install -y wget
