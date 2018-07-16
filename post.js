@@ -17,7 +17,7 @@
     if (typeof WebAssembly === 'object') {
       Module.onRuntimeInitialized = () => {
         var decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                    ['number', 'number', 'number', 'number', 'number']);
+                                        ['number', 'number', 'number', 'number', 'number']);
         resolve(decodeMemory);
       };
     } else {
