@@ -2,6 +2,12 @@
 
 A JavaScript port of [stb_vorbis.c](https://github.com/nothings/stb).
 
+## Usage
+
+Copy `build/stbvorbis.js` to your file server and load it via a script tag.
+
+This library uses WebAssembly. If you want to use stbvorbis.js at browsers that do not support WebAssembly (e.g. iOS Safari 8-10), copy `build/stbvorbis_asm.js` to the same directory as `build/stbvorbis.js` so that asm.js version is used as fallback.
+
 ## API
 
 ### `decode`

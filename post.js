@@ -13,14 +13,17 @@
 // limitations under the License.
 
 (Module => {
-  var decodeMemory = null;
-
   const initializationP = new Promise(resolve => {
-    Module.onRuntimeInitialized = () => {
-      decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                  ['number', 'number', 'number', 'number', 'number']);
-      resolve();
-    };
+    if (typeof WebAssembly === 'object') {
+      Module.onRuntimeInitialized = () => {
+        var decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
+                                        ['number', 'number', 'number', 'number', 'number']);
+        resolve(decodeMemory);
+      };
+    } else {
+      var decodeMemory = Module['_stb_vorbis_decode_memory_float'];
+      resolve(decodeMemory);
+    }
   });
 
   function arrayBufferToHeap(buffer, byteOffset, byteLength) {
@@ -55,7 +58,7 @@
   }
 
   onmessage = async event => {
-    await initializationP;
+    const decodeMemory = await initializationP;
     const buf = event.data.buf;
     let copiedBuf = null;
     if (buf instanceof ArrayBuffer) {
@@ -100,31 +103,3 @@
     postMessage(result, result.data.map(array => array.buffer));
   };
 })(Module);
-
-} // End of the function decodeWorker().
-
-let requestId = 0;
-const worker = new Worker(URL.createObjectURL(new Blob([ `(${decodeWorker.toString()})();` ], { type: "text/javascript" })));
-stbvorbis.decode = buf => new Promise((resolve, reject) => {
-  const currentId = requestId;
-  const onmessage = event => {
-    const result = event.data;
-    if (result.id !== currentId) {
-      return;
-    }
-    worker.removeEventListener('message', onmessage);
-    if (result.error) {
-      reject(result.error);
-      return;
-    }
-    resolve({
-      data:       result.data,
-      sampleRate: result.sampleRate,
-    });
-  };
-  worker.addEventListener('message', onmessage);
-  worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
-  requestId++;
-});
-
-})(); // End of the scope.

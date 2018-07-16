@@ -3,3 +3,4 @@
 *.wast
 main.js
 pre.js
+main_asm.js
