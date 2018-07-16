@@ -14,7 +14,7 @@
 
 (Module => {
   const initializationP = new Promise(resolve => {
-    if (Module['usingWasm']) {
+    if (typeof useWasm !== 'undefined') {
       Module.onRuntimeInitialized = () => {
         var decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
                                         ['number', 'number', 'number', 'number', 'number']);
