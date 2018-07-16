@@ -12,6 +12,7 @@ emcc -Os -o main_asm.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_ST
      -s WASM=0 \
      -s EXPORTED_FUNCTIONS='["_stb_vorbis_decode_memory_float"]' \
      -s ALLOW_MEMORY_GROWTH=1 \
+     -Wno-almost-asm \
      --memory-init-file 0 \
      main.c
 cat main_asm.js post.js > /tmp/stbvorbis_asm.js
