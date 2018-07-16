@@ -35,6 +35,7 @@ func run() error {
 	fmt.Println("(function() { // Begin of the scope.")
 	fmt.Println("function decodeWorker() { // Begin of function decodeWorker().")
 	fmt.Println("var Module = typeof Module !== 'undefined' ? Module : {};")
+	fmt.Println("var useWasm = true;")
 	fmt.Printf("Module['wasmBinary'] = Uint8Array.from(atob(%q), function(c) { return c.charCodeAt(0); });\n", base64.StdEncoding.EncodeToString(bin))
 	return nil
 }
