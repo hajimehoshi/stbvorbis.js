@@ -14,16 +14,16 @@
 
 (Module => {
   const initializationP = new Promise(resolve => {
-    if (typeof WebAssembly === 'object') {
+    if (Module['usingWasm']) {
       Module.onRuntimeInitialized = () => {
         var decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
                                         ['number', 'number', 'number', 'number', 'number']);
         resolve(decodeMemory);
       };
-    } else {
-      var decodeMemory = Module['_stb_vorbis_decode_memory_float'];
-      resolve(decodeMemory);
+      return;
     }
+    var decodeMemory = Module['_stb_vorbis_decode_memory_float'];
+    resolve(decodeMemory);
   });
 
   function arrayBufferToHeap(buffer, byteOffset, byteLength) {
