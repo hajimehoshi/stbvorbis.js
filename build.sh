@@ -1,2 +1,1 @@
-docker build -t hajimehoshi/stbvorbis.js-local:latest .
-docker run -t --rm -v $(pwd):/work hajimehoshi/stbvorbis.js-local:latest /bin/bash genjs.sh
+docker run -t --rm -v $(pwd):/work $(docker build -q .) /bin/bash genjs.sh
