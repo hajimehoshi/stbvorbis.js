@@ -13,7 +13,7 @@
 // limitations under the License.
 
 (function(Module) {
-  var initializationP = new Promise(function(resolve) {
+  var initializeP = new Promise(function(resolve) {
     if (typeof useWasm !== 'undefined') {
       Module.onRuntimeInitialized = function() {
         var decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
@@ -58,7 +58,7 @@
   }
 
   self.addEventListener('message', function(event) {
-    initializationP.then(function(decodeMemory) {
+    initializeP.then(function(decodeMemory) {
       var buf = event.data.buf;
       var copiedBuf = null;
       if (buf instanceof ArrayBuffer) {
