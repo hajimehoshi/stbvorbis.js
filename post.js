@@ -43,7 +43,7 @@ var initializeWorkerP = new Promise(function(resolve, reject) {
     ));
     resolve(new Worker(workerURL));
   }).catch(function(err) {
-    reject(new Error('asm.js fallback is not available. HTTP status: ' + err.status));
+    reject(new Error('asmjs version is not available (HTTP status: ' + err.status + ' on stbvorbis_asm.js). Deploy stbvorbis_asm.js at the same place as stbvorbis.js.'));
   });
 });
 
