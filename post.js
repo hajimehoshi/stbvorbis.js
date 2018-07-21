@@ -25,8 +25,7 @@ function httpGet(url) {
 }
 
 var initializeWorkerP = new Promise(function(resolve, reject) {
-  //if (typeof WebAssembly === 'object') {
-  if (false) {
+  if (typeof WebAssembly === 'object') {
     var workerURL = URL.createObjectURL(new Blob(
       ['(' + decodeWorker.toString() + ')();'],
       {type: 'text/javascript'}
