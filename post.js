@@ -52,8 +52,8 @@ var initializeWorkerP = new Promise(function(resolve, reject) {
 var requestId = 0;
 
 stbvorbis.decode = function(buf) {
-  return new Promise(function(resolve, reject) {
-    initializeWorkerP.then(function(worker) {
+  return initializeWorkerP.then(function(worker) {
+    return new Promise(function (resolve, reject) {
       var currentId = requestId;
       var onmessage = function(event) {
         var result = event.data;
@@ -73,8 +73,6 @@ stbvorbis.decode = function(buf) {
       worker.addEventListener('message', onmessage);
       worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
       requestId++;
-    }).catch(function(err) {
-      reject(err)
     });
   });
 };
