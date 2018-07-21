@@ -25,7 +25,8 @@ function httpGet(url) {
 }
 
 var initializeWorkerP = new Promise(function(resolve, reject) {
-  if (typeof WebAssembly === 'object') {
+  //if (typeof WebAssembly === 'object') {
+  if (false) {
     var workerURL = URL.createObjectURL(new Blob(
       ['(' + decodeWorker.toString() + ')();'],
       {type: 'text/javascript'}
@@ -45,9 +46,10 @@ var initializeWorkerP = new Promise(function(resolve, reject) {
   }).catch(function(err) {
     reject(new Error('asm.js fallback is not available. HTTP status: ' + err.status));
   });
-}).catch(function(e) {
-  // Catch the error once to suppress error messages on console.
 });
+
+// Catch the error once to suppress error messages on console.
+initializeWorkerP.catch(function(e) {});
 
 var requestId = 0;
 
