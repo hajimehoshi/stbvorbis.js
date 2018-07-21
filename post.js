@@ -43,21 +43,17 @@ var initializeWorkerP = new Promise(function(resolve, reject) {
     ));
     resolve(new Worker(workerURL));
   }).catch(function(err) {
-    // reject is not available here since this promise is used later.
-    resolve(new Error('asm.js fallback is not available. HTTP status: ' + err.status));
+    reject(new Error('asm.js fallback is not available. HTTP status: ' + err.status));
   });
+}).catch(function(e) {
+  // Catch the error once to suppress error messages on console.
 });
 
 var requestId = 0;
 
 stbvorbis.decode = function(buf) {
   return new Promise(function(resolve, reject) {
-    initializeWorkerP.then(function(val) {
-      if (val instanceof Error) {
-        reject(val)
-        return;
-      }
-      var worker = val;
+    initializeWorkerP.then(function(worker) {
       var currentId = requestId;
       var onmessage = function(event) {
         var result = event.data;
@@ -77,6 +73,8 @@ stbvorbis.decode = function(buf) {
       worker.addEventListener('message', onmessage);
       worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
       requestId++;
+    }).catch(function(err) {
+      reject(err)
     });
   });
 };
