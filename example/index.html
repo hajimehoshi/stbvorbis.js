@@ -31,7 +31,12 @@ async function initialize() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  await initialize()
+  try {
+    await initialize()
+  } catch(e) {
+    console.error(e);
+    return;
+  }
   document.getElementById('button').addEventListener('click', () => {
     const button = document.getElementById('button');
     switch (button.innerText) {
