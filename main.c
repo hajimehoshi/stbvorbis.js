@@ -20,19 +20,18 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
   if (v == NULL) {
     return -1;
   }
-  int limit = v->channels * 4096;
   *channels = v->channels;
   if (sample_rate) {
     *sample_rate = v->sample_rate;
   }
-  int data_len = 0;
-  int offset = 0;
-  int total = limit;
   float** data = (float**)malloc(v->channels * sizeof(float*));
   if (data == NULL) {
     stb_vorbis_close(v);
     return -2;
   }
+
+  int limit = v->channels * 4096;
+  int total = limit;
   for (int i = 0; i < v->channels; i++) {
     data[i] = (float*)malloc(total * sizeof(float));
     if (data[i] == NULL) {
@@ -42,6 +41,7 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
     }
   }
 
+  int data_len = 0;
   for (;;) {
     float* tmp[v->channels];
     for (int i = 0; i < v->channels; i++) {
