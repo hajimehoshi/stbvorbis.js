@@ -17,8 +17,10 @@
     if (typeof useWasm !== 'undefined') {
       Module.onRuntimeInitialized = function() {
         var fs = {};
-        fs.decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                       ['number', 'number', 'number', 'number', 'number']);
+        fs.open = Module.cwrap('stb_vorbis_js_open', 'number', []);
+        fs.close = Module.cwrap('stb_vorbis_js_close', 'void', ['number']);
+        fs.decode = Module.cwrap('stb_vorbis_js_decode', 'number',
+                                 ['number', 'number', 'number', 'number', 'number', 'number', 'number']);
         resolve(fs);
       };
       return;
@@ -26,7 +28,9 @@
 
     // asm.js
     var fs = {};
-    fs.decodeMemory = Module['_stb_vorbis_decode_memory_float'];
+    fs.open = Module['_stb_vorbis_js_open'];
+    fs.close = Module['_stb_vorbis_js_close'];
+    fs.decode = Module['_stb_vorbis_js_decode'];
     resolve(fs);
   });
 
@@ -73,7 +77,12 @@
       var channelsPtr = Module._malloc(4);
       var sampleRatePtr = Module._malloc(4);
       var outputPtr = Module._malloc(4);
-      var length = funcs.decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
+      var readPtr = Module._malloc(4);
+
+      var statePtr = funcs.open();
+      var length = funcs.decode(statePtr, copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr, readPtr);
+      funcs.close(statePtr);
+
       if (length < 0) {
         postMessage({
           id:    event.data.id,
@@ -103,6 +112,7 @@
       }
       Module._free(ptrToInt32(outputPtr));
       Module._free(outputPtr);
+      Module._free(readPtr);
 
       postMessage(result, result.data.map(function(array) { return array.buffer; }));
     });

@@ -14,41 +14,58 @@
 
 #include "stb_vorbis.c"
 
-int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int *sample_rate, float ***output) {
-  stb_vorbis* v = NULL;
-  int tmp_len = 32;
-  while (!v && tmp_len < len) {
-    int tmp_consumed = 0;
-    int error = 0;
-    if (tmp_len > len) {
-      tmp_len = len;
-    }
-    v = stb_vorbis_open_pushdata(mem, tmp_len, &tmp_consumed, &error, NULL);
-    if (error == VORBIS_need_more_data) {
-      if (tmp_len == len) {
-        return 0;
+typedef struct {
+  stb_vorbis* v;
+} StbVorbisState;
+
+StbVorbisState* stb_vorbis_js_open() {
+  // TODO: What if malloc fails?
+  return (StbVorbisState*)malloc(sizeof(StbVorbisState));
+}
+
+void stb_vorbis_js_close(StbVorbisState* state) {
+  stb_vorbis_close(state->v);
+  free(state);
+}
+
+int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, int *channels, int *sample_rate, float ***output, int* read) {
+  *read = 0;
+  if (!state->v) {
+    int tmp_len = 32;
+    while (!state->v && tmp_len < len) {
+      int tmp_consumed = 0;
+      int error = 0;
+      if (tmp_len > len) {
+        tmp_len = len;
       }
-      tmp_len *= 2;
-      continue;
+      state->v = stb_vorbis_open_pushdata(mem, tmp_len, &tmp_consumed, &error, NULL);
+      if (error == VORBIS_need_more_data) {
+        if (tmp_len == len) {
+          return 0;
+        }
+        tmp_len *= 2;
+        continue;
+      }
+      if (error) {
+        return -1;
+      }
+      *read += tmp_consumed;
+      mem += tmp_consumed;
+      len -= tmp_consumed;
     }
-    if (error) {
-      return -1;
-    }
-    mem += tmp_consumed;
-    len -= tmp_consumed;
   }
 
-  *channels = v->channels;
+  *channels = state->v->channels;
   if (sample_rate) {
-    *sample_rate = v->sample_rate;
+    *sample_rate = state->v->sample_rate;
   }
 
-  float** data = (float**)malloc(v->channels * sizeof(float*));
+  float** data = (float**)malloc(state->v->channels * sizeof(float*));
   if (data == NULL) {
-    stb_vorbis_close(v);
-    return -2;
+    stb_vorbis_close(state->v);
+    return -1;
   }
-  for (int i = 0; i < v->channels; i++) {
+  for (int i = 0; i < state->v->channels; i++) {
     data[i] = NULL;
   }
   int data_len = 0;
@@ -62,7 +79,7 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
     if (tmp_len > len) {
       tmp_len = len;
     }
-    const int used = stb_vorbis_decode_frame_pushdata(v, mem, tmp_len, NULL, &output, &samples);
+    const int used = stb_vorbis_decode_frame_pushdata(state->v, mem, tmp_len, NULL, &output, &samples);
     if (used == 0) {
       if (tmp_len == len) {
         // all read.
@@ -71,6 +88,7 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
       tmp_len *= 2;
       goto retry;
     }
+    *read += used;
     mem += used;
     len -= used;
 
@@ -80,18 +98,18 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
       } else {
         data_cap *= 2;
       }
-      for (int i = 0; i < v->channels; i++) {
+      for (int i = 0; i < state->v->channels; i++) {
         float* newData = (float*)realloc(data[i], data_cap * sizeof(float));
         if (newData == NULL) {
           // TODO: Free allocated objects correctly?
-          stb_vorbis_close(v);
-          return -2;
+          stb_vorbis_close(state->v);
+          return -1;
         }
         data[i] = newData;
       }
     }
 
-    for (int i = 0; i < v->channels; i++) {
+    for (int i = 0; i < state->v->channels; i++) {
       for (int j = 0; j < samples; j++) {
         // Clamp the data not to cause noises.
         float sample = output[i][j];
@@ -105,8 +123,6 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
     }
     data_len += samples;
   }
-  stb_vorbis_close(v);
-
   *output = data;
   return data_len;
 }
