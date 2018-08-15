@@ -16,14 +16,18 @@
   var initializeP = new Promise(function(resolve) {
     if (typeof useWasm !== 'undefined') {
       Module.onRuntimeInitialized = function() {
-        var decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
-                                        ['number', 'number', 'number', 'number', 'number']);
-        resolve(decodeMemory);
+        var fs = {};
+        fs.decodeMemory = Module.cwrap('stb_vorbis_decode_memory_float', 'number',
+                                       ['number', 'number', 'number', 'number', 'number']);
+        resolve(fs);
       };
       return;
     }
-    var decodeMemory = Module['_stb_vorbis_decode_memory_float'];
-    resolve(decodeMemory);
+
+    // asm.js
+    var fs = {};
+    fs.decodeMemory = Module['_stb_vorbis_decode_memory_float'];
+    resolve(fs);
   });
 
   function arrayBufferToHeap(buffer, byteOffset, byteLength) {
@@ -58,7 +62,7 @@
   }
 
   self.addEventListener('message', function(event) {
-    initializeP.then(function(decodeMemory) {
+    initializeP.then(function(funcs) {
       var buf = event.data.buf;
       var copiedBuf = null;
       if (buf instanceof ArrayBuffer) {
@@ -69,7 +73,7 @@
       var channelsPtr = Module._malloc(4);
       var sampleRatePtr = Module._malloc(4);
       var outputPtr = Module._malloc(4);
-      var length = decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
+      var length = funcs.decodeMemory(copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr);
       if (length < 0) {
         postMessage({
           id:    event.data.id,
