@@ -28,7 +28,15 @@ void stb_vorbis_js_close(StbVorbisState* state) {
   free(state);
 }
 
-int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, int *channels, int *sample_rate, float ***output, int* read) {
+int stb_vorbis_js_channels(StbVorbisState* state) {
+  return state->v->channels;
+}
+
+int stb_vorbis_js_sample_rate(StbVorbisState* state) {
+  return state->v->sample_rate;
+}
+
+int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, float ***output, int* read) {
   *read = 0;
   if (!state->v) {
     int tmp_len = 32;
@@ -53,11 +61,6 @@ int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, int *
       mem += tmp_consumed;
       len -= tmp_consumed;
     }
-  }
-
-  *channels = state->v->channels;
-  if (sample_rate) {
-    *sample_rate = state->v->sample_rate;
   }
 
   float** data = (float**)malloc(state->v->channels * sizeof(float*));

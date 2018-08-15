@@ -19,8 +19,10 @@
         var fs = {};
         fs.open = Module.cwrap('stb_vorbis_js_open', 'number', []);
         fs.close = Module.cwrap('stb_vorbis_js_close', 'void', ['number']);
+        fs.channels = Module.cwrap('stb_vorbis_js_channels', 'number', ['number']);
+        fs.sampleRate = Module.cwrap('stb_vorbis_js_sample_rate', 'number', ['number']);
         fs.decode = Module.cwrap('stb_vorbis_js_decode', 'number',
-                                 ['number', 'number', 'number', 'number', 'number', 'number', 'number']);
+                                 ['number', 'number', 'number', 'number', 'number']);
         resolve(fs);
       };
       return;
@@ -30,6 +32,8 @@
     var fs = {};
     fs.open = Module['_stb_vorbis_js_open'];
     fs.close = Module['_stb_vorbis_js_close'];
+    fs.channels = Module['_stb_vorbis_js_channels'];
+    fs.sampleRate = Module['_stb_vorbis_js_sampleRate'];
     fs.decode = Module['_stb_vorbis_js_decode'];
     resolve(fs);
   });
@@ -74,47 +78,45 @@
       } else if (buf instanceof Uint8Array) {
         copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
       }
-      var channelsPtr = Module._malloc(4);
-      var sampleRatePtr = Module._malloc(4);
       var outputPtr = Module._malloc(4);
       var readPtr = Module._malloc(4);
 
       var statePtr = funcs.open();
-      var length = funcs.decode(statePtr, copiedBuf.byteOffset, copiedBuf.byteLength, channelsPtr, sampleRatePtr, outputPtr, readPtr);
-      funcs.close(statePtr);
+      try {
+        var length = funcs.decode(statePtr, copiedBuf.byteOffset, copiedBuf.byteLength, outputPtr, readPtr);
 
-      if (length < 0) {
-        postMessage({
-          id:    event.data.id,
-          error: new Error('stbvorbis decode failed: ' + length),
-        });
-        return;
+        if (length < 0) {
+          postMessage({
+            id:    event.data.id,
+            error: new Error('stbvorbis decode failed: ' + length),
+          });
+          return;
+        }
+        var channels = funcs.channels(statePtr);
+        var data = [];
+        var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+        for (var i = 0; i < dataPtrs.length; i++) {
+          data.push(ptrToFloat32s(dataPtrs[i], length));
+        }
+        var result = {
+          id:         event.data.id,
+          data:       data,
+          sampleRate: funcs.sampleRate(statePtr),
+        };
+
+        Module._free(copiedBuf.byteOffset);
+
+        for (var i = 0; i < dataPtrs.length; i++) {
+          Module._free(dataPtrs[i]);
+        }
+        Module._free(ptrToInt32(outputPtr));
+        Module._free(outputPtr);
+        Module._free(readPtr);
+
+        postMessage(result, result.data.map(function(array) { return array.buffer; }));
+      } finally {
+        funcs.close(statePtr);
       }
-      var channels = ptrToInt32(channelsPtr);
-      
-      var data = [];
-      var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-      for (var i = 0; i < dataPtrs.length; i++) {
-        data.push(ptrToFloat32s(dataPtrs[i], length));
-      }
-      var result = {
-        id:         event.data.id,
-        data:       data,
-        sampleRate: ptrToInt32(sampleRatePtr),
-      };
-
-      Module._free(copiedBuf.byteOffset);
-      Module._free(channelsPtr);
-      Module._free(sampleRatePtr);
-
-      for (var i = 0; i < dataPtrs.length; i++) {
-        Module._free(dataPtrs[i]);
-      }
-      Module._free(ptrToInt32(outputPtr));
-      Module._free(outputPtr);
-      Module._free(readPtr);
-
-      postMessage(result, result.data.map(function(array) { return array.buffer; }));
     });
   });
 })(Module);

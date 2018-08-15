@@ -16,7 +16,7 @@ mkdir -p build
 
 emcc -Os -o main.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_STDIO \
      -s WASM=1 \
-     -s EXPORTED_FUNCTIONS='["_stb_vorbis_js_decode", "_stb_vorbis_js_open", "_stb_vorbis_js_close"]' \
+     -s EXPORTED_FUNCTIONS='["_stb_vorbis_js_decode", "_stb_vorbis_js_open", "_stb_vorbis_js_close", "_stb_vorbis_js_channels", "_stb_vorbis_js_sample_rate"]' \
      -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
      -s ALLOW_MEMORY_GROWTH=1 \
      main.c
@@ -26,7 +26,7 @@ uglifyjs /tmp/stbvorbis.js > ./build/stbvorbis.js
 
 emcc -Os -o main_asm.js -g -DSTB_VORBIS_NO_INTEGER_CONVERSION -DSTB_VORBIS_NO_STDIO \
      -s WASM=0 \
-     -s EXPORTED_FUNCTIONS='["_stb_vorbis_js_decode", "_stb_vorbis_js_open", "_stb_vorbis_js_close"]' \
+     -s EXPORTED_FUNCTIONS='["_stb_vorbis_js_decode", "_stb_vorbis_js_open", "_stb_vorbis_js_close", "_stb_vorbis_js_channels", "_stb_vorbis_js_sample_rate"]' \
      -s ALLOW_MEMORY_GROWTH=1 \
      -Wno-almost-asm \
      --memory-init-file 0 \
