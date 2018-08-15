@@ -20,9 +20,15 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
   while (!v && tmp_len < len) {
     int tmp_consumed = 0;
     int error = 0;
+    if (tmp_len > len) {
+      tmp_len = len;
+    }
     v = stb_vorbis_open_pushdata(mem, tmp_len, &tmp_consumed, &error, NULL);
     if (error == VORBIS_need_more_data) {
-      tmp_len += 32;
+      if (tmp_len == len) {
+        return 0;
+      }
+      tmp_len *= 2;
       continue;
     }
     if (error) {
@@ -62,7 +68,7 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
         // all read.
         break;
       }
-      tmp_len += 32;
+      tmp_len *= 2;
       goto retry;
     }
     mem += used;
