@@ -29,10 +29,16 @@ void stb_vorbis_js_close(StbVorbisState* state) {
 }
 
 int stb_vorbis_js_channels(StbVorbisState* state) {
+  if (!state->v) {
+    return 0;
+  }
   return state->v->channels;
 }
 
 int stb_vorbis_js_sample_rate(StbVorbisState* state) {
+  if (!state->v) {
+    return 0;
+  }
   return state->v->sample_rate;
 }
 
