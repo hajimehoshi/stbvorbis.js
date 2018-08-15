@@ -17,9 +17,8 @@
 int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int *sample_rate, float ***output) {
   stb_vorbis* v = NULL;
   int tmp_len = 32;
-  int consumed = 0;
-  int tmp_consumed = 0;
   while (!v && tmp_len < len) {
+    int tmp_consumed = 0;
     int error = 0;
     v = stb_vorbis_open_pushdata(mem, tmp_len, &tmp_consumed, &error, NULL);
     if (error == VORBIS_need_more_data) {
@@ -29,8 +28,9 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
     if (error) {
       return -1;
     }
+    mem += tmp_consumed;
+    len -= tmp_consumed;
   }
-  consumed += tmp_consumed;
 
   *channels = v->channels;
   if (sample_rate) {
@@ -53,19 +53,20 @@ int stb_vorbis_decode_memory_float(const uint8 *mem, int len, int *channels, int
     float** output = NULL;
     int samples = 0;
   retry:
-    if (consumed + tmp_len > len) {
-      tmp_len = len - consumed;
+    if (tmp_len > len) {
+      tmp_len = len;
     }
-    const int used = stb_vorbis_decode_frame_pushdata(v, mem + consumed, tmp_len, NULL, &output, &samples);
+    const int used = stb_vorbis_decode_frame_pushdata(v, mem, tmp_len, NULL, &output, &samples);
     if (used == 0) {
-      if (consumed + tmp_len == len) {
+      if (tmp_len == len) {
         // all read.
         break;
       }
       tmp_len += 32;
       goto retry;
     }
-    consumed += used;
+    mem += used;
+    len -= used;
 
     if (data_cap < data_len + samples) {
       if (!data_cap) {
