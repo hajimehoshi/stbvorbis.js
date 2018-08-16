@@ -72,18 +72,18 @@
   self.addEventListener('message', function(event) {
     initializeP.then(function(funcs) {
       var statePtr = funcs.open();
+      var input = event.data.buf;
       try {
-        var buf = event.data.buf;
-        var copiedBuf = null;
-        if (buf instanceof ArrayBuffer) {
-          copiedBuf = arrayBufferToHeap(buf, 0, buf.byteLength);
-        } else if (buf instanceof Uint8Array) {
-          copiedBuf = arrayBufferToHeap(buf.buffer, buf.byteOffset, buf.byteLength);
+        var copiedInput = null;
+        if (input instanceof ArrayBuffer) {
+          copiedInput = arrayBufferToHeap(input, 0, input.byteLength);
+        } else if (input instanceof Uint8Array) {
+          copiedInput = arrayBufferToHeap(input.buffer, input.byteOffset, input.byteLength);
         }
 
         var outputPtr = Module._malloc(4);
         var readPtr = Module._malloc(4);
-        var length = funcs.decode(statePtr, copiedBuf.byteOffset, copiedBuf.byteLength, outputPtr, readPtr);
+        var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
 
         if (length < 0) {
           postMessage({
@@ -104,7 +104,7 @@
           sampleRate: funcs.sampleRate(statePtr),
         };
 
-        Module._free(copiedBuf.byteOffset);
+        Module._free(copiedInput.byteOffset);
 
         for (var i = 0; i < dataPtrs.length; i++) {
           Module._free(dataPtrs[i]);
