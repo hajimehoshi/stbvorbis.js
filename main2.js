@@ -87,7 +87,7 @@
         sampleRate: 0,
         error:      null,
       };
-      var initMinChunkLength = 4096;
+      var initMinChunkLength = 65536;
       var minChunkLength = initMinChunkLength;
       try {
         while (input.byteLength > 0) {
