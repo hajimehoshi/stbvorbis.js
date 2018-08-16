@@ -64,7 +64,7 @@
 
   function appendFloat32s(arr, ptr, length) {
     if (arr.buffer.byteLength < arr.byteLength + length * Float32Array.BYTES_PER_ELEMENT) {
-      var newByteLength = Math.max(Math.floor(arr.buffer.byteLength * 1.5 / 4) * 4,
+      var newByteLength = Math.max(Math.floor(arr.buffer.byteLength * 1.2 / 4) * 4,
                                    arr.byteLength + length * Float32Array.BYTES_PER_ELEMENT);
       var buf = new ArrayBuffer(newByteLength);
       var newArr = new Float32Array(buf, arr.byteOffset, arr.length);
