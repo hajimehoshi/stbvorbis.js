@@ -62,11 +62,19 @@
     return copied;
   }
 
-  function ptrToFloat32s(ptr, length) {
-    var buf = new ArrayBuffer(length * Float32Array.BYTES_PER_ELEMENT);
-    var copied = new Float32Array(buf);
-    copied.set(new Float32Array(Module.HEAPU8.buffer, ptr, length));
-    return copied;
+  function appendFloat32s(arr, ptr, length) {
+    if (arr.buffer.byteLength < arr.byteLength + length * Float32Array.BYTES_PER_ELEMENT) {
+      var newByteLength = Math.max(Math.floor(arr.buffer.byteLength * 1.5 / 4) * 4,
+                                   arr.byteLength + length * Float32Array.BYTES_PER_ELEMENT);
+      var buf = new ArrayBuffer(newByteLength);
+      var newArr = new Float32Array(buf, arr.byteOffset, arr.length);
+      newArr.set(arr, 0);
+      arr = newArr;
+    }
+    var oldLength = arr.length;
+    arr = new Float32Array(arr.buffer, arr.byteOffset, oldLength + length);
+    arr.set(new Float32Array(Module.HEAPU8.buffer, ptr, length), oldLength);
+    return arr;
   }
 
   self.addEventListener('message', function(event) {
@@ -79,23 +87,29 @@
         sampleRate: 0,
         error:      null,
       };
+      var initMinChunkLength = 4096;
+      var minChunkLength = initMinChunkLength;
       try {
         while (input.byteLength > 0) {
           var copiedInput = null;
-          var chunkLength = input.byteLength;
+          var chunkLength = Math.min(minChunkLength, input.byteLength);
           if (input instanceof ArrayBuffer) {
             copiedInput = arrayBufferToHeap(input, 0, chunkLength);
           } else if (input instanceof Uint8Array) {
             copiedInput = arrayBufferToHeap(input.buffer, input.byteOffset, chunkLength);
           }
-          input = input.slice(chunkLength);
 
           var outputPtr = Module._malloc(4);
           var readPtr = Module._malloc(4);
           var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
+          Module._free(copiedInput.byteOffset);
+
+          var read = ptrToInt32(readPtr);
+          Module._free(readPtr);
+          input = input.slice(read);
 
           if (length < 0) {
-            result.error = new Error('stbvorbis decode failed: ' + length);
+            result.error = 'stbvorbis decode failed: ' + length;
             postMessage(result);
             return;
           }
@@ -104,21 +118,25 @@
           if (channels > 0) {
             var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
             for (var i = 0; i < dataPtrs.length; i++) {
-              result.data.push(ptrToFloat32s(dataPtrs[i], length));
+              if (!result.data[i]) {
+                result.data[i] = new Float32Array();
+              }
+              result.data[i] = appendFloat32s(result.data[i], dataPtrs[i], length);
+              Module._free(dataPtrs[i]);
             }
           }
+          Module._free(ptrToInt32(outputPtr));
+          Module._free(outputPtr);
 
           if (result.sampleRate === 0) {
             result.sampleRate = funcs.sampleRate(statePtr);
           }
 
-          Module._free(copiedInput.byteOffset);
-          for (var i = 0; i < dataPtrs.length; i++) {
-            Module._free(dataPtrs[i]);
+          if (result.data.length === 0 || result.sampleRate === 0) {
+            minChunkLength *= 2;
+          } else {
+            minChunkLength = initMinChunkLength;
           }
-          Module._free(ptrToInt32(outputPtr));
-          Module._free(outputPtr);
-          Module._free(readPtr);
         }
       } finally {
         funcs.close(statePtr);
