@@ -73,50 +73,57 @@
     initializeP.then(function(funcs) {
       var statePtr = funcs.open();
       var input = event.data.buf;
+      var result = {
+        id:         event.data.id,
+        data:       [],
+        sampleRate: 0,
+        error:      null,
+      };
       try {
-        var copiedInput = null;
-        if (input instanceof ArrayBuffer) {
-          copiedInput = arrayBufferToHeap(input, 0, input.byteLength);
-        } else if (input instanceof Uint8Array) {
-          copiedInput = arrayBufferToHeap(input.buffer, input.byteOffset, input.byteLength);
+        while (input.byteLength > 0) {
+          var copiedInput = null;
+          var chunkLength = input.byteLength;
+          if (input instanceof ArrayBuffer) {
+            copiedInput = arrayBufferToHeap(input, 0, chunkLength);
+          } else if (input instanceof Uint8Array) {
+            copiedInput = arrayBufferToHeap(input.buffer, input.byteOffset, chunkLength);
+          }
+          input = input.slice(chunkLength);
+
+          var outputPtr = Module._malloc(4);
+          var readPtr = Module._malloc(4);
+          var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
+
+          if (length < 0) {
+            result.error = new Error('stbvorbis decode failed: ' + length);
+            postMessage(result);
+            return;
+          }
+
+          var channels = funcs.channels(statePtr);
+          if (channels > 0) {
+            var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+            for (var i = 0; i < dataPtrs.length; i++) {
+              result.data.push(ptrToFloat32s(dataPtrs[i], length));
+            }
+          }
+
+          if (result.sampleRate === 0) {
+            result.sampleRate = funcs.sampleRate(statePtr);
+          }
+
+          Module._free(copiedInput.byteOffset);
+          for (var i = 0; i < dataPtrs.length; i++) {
+            Module._free(dataPtrs[i]);
+          }
+          Module._free(ptrToInt32(outputPtr));
+          Module._free(outputPtr);
+          Module._free(readPtr);
         }
-
-        var outputPtr = Module._malloc(4);
-        var readPtr = Module._malloc(4);
-        var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
-
-        if (length < 0) {
-          postMessage({
-            id:    event.data.id,
-            error: new Error('stbvorbis decode failed: ' + length),
-          });
-          return;
-        }
-        var channels = funcs.channels(statePtr);
-        var data = [];
-        var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-        for (var i = 0; i < dataPtrs.length; i++) {
-          data.push(ptrToFloat32s(dataPtrs[i], length));
-        }
-        var result = {
-          id:         event.data.id,
-          data:       data,
-          sampleRate: funcs.sampleRate(statePtr),
-        };
-
-        Module._free(copiedInput.byteOffset);
-
-        for (var i = 0; i < dataPtrs.length; i++) {
-          Module._free(dataPtrs[i]);
-        }
-        Module._free(ptrToInt32(outputPtr));
-        Module._free(outputPtr);
-        Module._free(readPtr);
-
-        postMessage(result, result.data.map(function(array) { return array.buffer; }));
       } finally {
         funcs.close(statePtr);
       }
+      postMessage(result, result.data.map(function(array) { return array.buffer; }));
     });
   });
 })(Module);
