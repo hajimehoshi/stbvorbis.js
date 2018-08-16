@@ -20,7 +20,9 @@ typedef struct {
 
 StbVorbisState* stb_vorbis_js_open() {
   // TODO: What if malloc fails?
-  return (StbVorbisState*)malloc(sizeof(StbVorbisState));
+  StbVorbisState* state = (StbVorbisState*)malloc(sizeof(StbVorbisState));
+  memset(state, 0, sizeof(StbVorbisState));
+  return state;
 }
 
 void stb_vorbis_js_close(StbVorbisState* state) {
