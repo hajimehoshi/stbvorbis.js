@@ -14,6 +14,6 @@ RUN wget -O go.tar.gz https://dl.google.com/go/go1.11.linux-amd64.tar.gz && \
 ENV PATH "/usr/local/go/bin:${PATH}"
 
 # Install npm
-RUN npm install -g uglify-js@3.4.4
+RUN npm install -g uglify-js@3.4.9
 
 WORKDIR /work
