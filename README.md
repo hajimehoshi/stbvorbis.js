@@ -25,6 +25,6 @@ The given callback is called when decoding proceeded or error happens. The argum
 | name | description |
 | --- | --- |
 | `data`       | An array of `Float32Array` that represents decoded stream for each channel. |
-| `sampleRate` | Rhe sample rate like 44100. |
+| `sampleRate` | The sample rate like 44100. |
 | `eof`        | True if the stream ends, otherwise false. |
 | `error`      | An error string if exists, otherwise null. |
