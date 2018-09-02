@@ -15,7 +15,7 @@ This library uses WebAssembly. If you want to use stbvorbis.js at browsers that 
 ### `decode`
 
 ```
-stbvorbis.decode(buf: ArrayBuffer|Uint8Array, callback: function(Object)): Promise
+stbvorbis.decode(buf: ArrayBuffer|Uint8Array, callback: function(event: Object)): Promise
 ```
 
 `decode` decodes the given Ogg/Vorbis data and returns a promise.
