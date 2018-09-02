@@ -15,10 +15,10 @@ This library uses WebAssembly. If you want to use stbvorbis.js at browsers that 
 ### `decode`
 
 ```
-stbvorbis.decode(buf: ArrayBuffer|Uint8Array, callback: function(event: Object)): Promise
+stbvorbis.decode(buf: ArrayBuffer|Uint8Array, callback: function(event: Object))
 ```
 
-`decode` decodes the given Ogg/Vorbis data and returns a promise.
+`decode` decodes the given Ogg/Vorbis data.
 
 The given callback is called when decoding proceeded or error happens. The argument is an object that has these keys:
 
