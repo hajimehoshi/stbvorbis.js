@@ -62,31 +62,17 @@
     return copied;
   }
 
-  function appendFloat32s(arr, ptr, length) {
-    if (arr.buffer.byteLength < arr.byteLength + length * Float32Array.BYTES_PER_ELEMENT) {
-      var newByteLength = Math.max(Math.floor(arr.buffer.byteLength * 1.2 / 4) * 4,
-                                   arr.byteLength + length * Float32Array.BYTES_PER_ELEMENT);
-      var buf = new ArrayBuffer(newByteLength);
-      var newArr = new Float32Array(buf, arr.byteOffset, arr.length);
-      newArr.set(arr, 0);
-      arr = newArr;
-    }
-    var oldLength = arr.length;
-    arr = new Float32Array(arr.buffer, arr.byteOffset, oldLength + length);
-    arr.set(new Float32Array(Module.HEAPU8.buffer, ptr, length), oldLength);
-    return arr;
+  function ptrToFloat32s(ptr, length) {
+    var buf = new ArrayBuffer(length * Float32Array.BYTES_PER_ELEMENT);
+    var copied = new Float32Array(buf);
+    copied.set(new Float32Array(Module.HEAPU8.buffer, ptr, length));
+    return copied;
   }
 
   self.addEventListener('message', function(event) {
     initializeP.then(function(funcs) {
       var statePtr = funcs.open();
       var input = event.data.buf;
-      var result = {
-        id:         event.data.id,
-        data:       [],
-        sampleRate: 0,
-        error:      null,
-      };
       var initMinChunkLength = 65536;
       var minChunkLength = initMinChunkLength;
       try {
@@ -108,6 +94,14 @@
           Module._free(readPtr);
           input = input.slice(read);
 
+          var result = {
+            id:         event.data.id,
+            data:       null,
+            sampleRate: 0,
+            eof:        false,
+            error:      null,
+          };
+
           if (length < 0) {
             result.error = 'stbvorbis decode failed: ' + length;
             postMessage(result);
@@ -117,11 +111,9 @@
           var channels = funcs.channels(statePtr);
           if (channels > 0) {
             var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+            result.data = new Array(dataPtrs.length);
             for (var i = 0; i < dataPtrs.length; i++) {
-              if (!result.data[i]) {
-                result.data[i] = new Float32Array();
-              }
-              result.data[i] = appendFloat32s(result.data[i], dataPtrs[i], length);
+              result.data[i] = ptrToFloat32s(dataPtrs[i], length);
               Module._free(dataPtrs[i]);
             }
           }
@@ -137,11 +129,21 @@
           } else {
             minChunkLength = initMinChunkLength;
           }
+
+          postMessage(result, result.data.map(function(array) { return array.buffer; }));
         }
       } finally {
         funcs.close(statePtr);
       }
-      postMessage(result, result.data.map(function(array) { return array.buffer; }));
+
+      var result = {
+        id:         event.data.id,
+        data:       null,
+        sampleRate: 0,
+        eof:        true,
+        error:      null,
+      };
+      postMessage(result);
     });
   });
 })(Module);
