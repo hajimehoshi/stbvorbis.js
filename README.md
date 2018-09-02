@@ -15,11 +15,16 @@ This library uses WebAssembly. If you want to use stbvorbis.js at browsers that 
 ### `decode`
 
 ```
-stbvorbis.decode(buf: ArrayBuffer|Uint8Array): Promise
+stbvorbis.decode(buf: ArrayBuffer|Uint8Array, callback: function(Object)): Promise
 ```
 
 `decode` decodes the given Ogg/Vorbis data and returns a promise.
 
-The promise result includes `data` field and `sampleRate` field. `data` is an array of `Float32Array` that represents decoded stream for each channel. `sampleRate` represents the sample rate like 44100.
+The given callback is called when decoding proceeded or error happens. The argument is an object that has these keys:
 
-The promise is rejected when decoding is failed.
+| name | description |
+| --- | --- |
+| `data`       | An array of `Float32Array` that represents decoded stream for each channel. |
+| `sampleRate` | Rhe sample rate like 44100. |
+| `eof`        | True if the stream ends, otherwise false. |
+| `error`      | An error string if exists, otherwise null. |

@@ -66,53 +66,48 @@ initializeWorkerP.catch(function(e) {});
 
 var requestId = 0;
 
-function concatTypedArrays(a, b) {
-  var c = new (a.constructor)(a.length + b.length);
-  c.set(a, 0);
-  c.set(b, a.length);
-  return c;
-}
+stbvorbis.decode = function(buf, callback) {
+  initializeWorkerP.then(function(worker) {
+    var currentId = requestId;
+    var sampleRate = 0;
+    var data = [];
+    var onmessage = function(event) {
+      var result = event.data;
+      if (result.id !== currentId) {
+        return;
+      }
 
-stbvorbis.decode = function(buf) {
-  return initializeWorkerP.then(function(worker) {
-    return new Promise(function (resolve, reject) {
-      var currentId = requestId;
-      var sampleRate = 0;
-      var data = [];
-      var onmessage = function(event) {
-        var result = event.data;
-        if (result.id !== currentId) {
-          return;
-        }
-        if (sampleRate === 0) {
-          sampleRate = result.sampleRate;
-        }
+      if (result.error) {
+        callback({
+          data:       null,
+          sampleRate: 0,
+          eof:        false,
+          error:      result.error,
+        });
+        return;
+      }
 
-        if (result.error) {
-          reject(result.error);
-          return;
-        }
+      if (result.eof) {
+        worker.removeEventListener('message', onmessage);
+        callback({
+          data:       null,
+          sampleRate: 0,
+          eof:        true,
+          error:      null,
+        });
+        return;
+      }
 
-        if (result.eof) {
-          worker.removeEventListener('message', onmessage);
-          resolve({
-            data:       data,
-            sampleRate: sampleRate,
-          });
-          return;
-        }
-
-        for (var i = 0; i < result.data.length; i++) {
-          if (!data[i]) {
-            data[i] = new Float32Array();
-          }
-          data[i] = concatTypedArrays(data[i], result.data[i]);
-        }
-      };
-      worker.addEventListener('message', onmessage);
-      worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
-      requestId++;
-    });
+      callback({
+        data:       result.data,
+        sampleRate: result.sampleRate,
+        eof:        false,
+        error:      null,
+      });
+    };
+    worker.addEventListener('message', onmessage);
+    worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
+    requestId++;
   });
 };
 

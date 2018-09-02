@@ -2,38 +2,51 @@
 <title>stbvorbis.js Demo</title>
 <script src="./stbvorbis.js"></script>
 <script>
-var context = null;
-
-async function initialize() {
+async function initialize(context) {
   const buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
-  const result = await stbvorbis.decode(buf);
-  const channels = result.data.length;
-  console.log('channels:', channels);
-  console.log('length:', result.data[0].length);
-  console.log('sampleRate:', result.sampleRate);
+  let posInSamples = 0;
+  return new Promise((resolve, reject) => {
+    stbvorbis.decode(buf, function(e) {
+      if (e.error) {
+        reject(e.error);
+        return;
+      }
 
-  var AudioContext = window.AudioContext || window.webkitAudioContext;
-  context = new AudioContext();
-  const buffer = context.createBuffer(result.data.length, result.data[0].length, result.sampleRate);
-  for (let i = 0; i < channels; i++) {
-    // copyToChannel might not be available on Safari.
-    if (buffer.copyToChannel) {
-      buffer.copyToChannel(result.data[i], i);
-    } else {
-      buffer.getChannelData(i).set(result.data[i]);
-    }
-  }
-  const source = context.createBufferSource();
-  source.buffer = buffer;
-  source.connect(context.destination);
-  source.start(0);
+      if (e.eof) {
+        resolve();
+        return;
+      }
 
-  document.getElementById('button').disabled = false;
+      const channels = e.data.length;
+      console.log('channels:', channels);
+      console.log('length:', e.data[0].length);
+      console.log('sampleRate:', e.sampleRate);
+
+      const buffer = context.createBuffer(e.data.length, e.data[0].length, e.sampleRate);
+      for (let i = 0; i < channels; i++) {
+        // copyToChannel might not be available on Safari.
+        if (buffer.copyToChannel) {
+          buffer.copyToChannel(e.data[i], i);
+        } else {
+          buffer.getChannelData(i).set(e.data[i]);
+        }
+      }
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(context.destination);
+      source.start(posInSamples / e.sampleRate);
+      posInSamples += e.data[0].length;
+
+      document.getElementById('button').disabled = false;
+    });
+  });
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  var AudioContext = window.AudioContext || window.webkitAudioContext;
+  const context = new AudioContext();
   try {
-    await initialize()
+    await initialize(context);
   } catch(e) {
     console.error(e);
     return;
