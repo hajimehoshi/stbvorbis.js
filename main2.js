@@ -147,7 +147,7 @@
           result.error = 'stbvorbis decode failed: ' + length;
           postMessage(result);
           funcs.close(statePtr);
-          delete(sessions, event.data.id);
+          delete(sessions[event.data.id]);
           // TOOD: Need to free ptrToInt32(outputPtr)?
           Module._free(outputPtr);
           return;
@@ -186,6 +186,8 @@
           error:      null,
         };
         postMessage(result);
+        funcs.close(statePtr);
+        delete(sessions[event.data.id]);
       }
     });
   });
