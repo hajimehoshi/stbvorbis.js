@@ -116,68 +116,64 @@
       }
 
       while (input.byteLength > 0) {
-        try {
-          var copiedInput = null;
-          var chunkLength = Math.min(65536, input.byteLength);
-          if (input instanceof ArrayBuffer) {
-            copiedInput = arrayBufferToHeap(input, 0, chunkLength);
-          } else if (input instanceof Uint8Array) {
-            copiedInput = arrayBufferToHeap(input.buffer, input.byteOffset, chunkLength);
-          }
+        var copiedInput = null;
+        var chunkLength = Math.min(65536, input.byteLength);
+        if (input instanceof ArrayBuffer) {
+          copiedInput = arrayBufferToHeap(input, 0, chunkLength);
+        } else if (input instanceof Uint8Array) {
+          copiedInput = arrayBufferToHeap(input.buffer, input.byteOffset, chunkLength);
+        }
 
-          var outputPtr = Module._malloc(4);
+        var outputPtr = Module._malloc(4);
 
-          var readPtr = Module._malloc(4);
-          var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
-          Module._free(copiedInput.byteOffset);
+        var readPtr = Module._malloc(4);
+        var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
+        Module._free(copiedInput.byteOffset);
 
-          var read = ptrToInt32(readPtr);
-          Module._free(readPtr);
-          input = input.slice(read);
-          sessions[event.data.id].input = input;
+        var read = ptrToInt32(readPtr);
+        Module._free(readPtr);
+        input = input.slice(read);
+        sessions[event.data.id].input = input;
 
-          var result = {
-            id:         event.data.id,
-            data:       null,
-            sampleRate: 0,
-            eof:        false,
-            error:      null,
-          };
+        var result = {
+          id:         event.data.id,
+          data:       null,
+          sampleRate: 0,
+          eof:        false,
+          error:      null,
+        };
 
-          if (length < 0) {
-            result.error = 'stbvorbis decode failed: ' + length;
-            postMessage(result);
-            funcs.close(statePtr);
-            delete(sessions, event.data.id);
-            return;
-          }
-
-          var channels = funcs.channels(statePtr);
-          if (channels > 0) {
-            var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
-            result.data = new Array(dataPtrs.length);
-            for (var i = 0; i < dataPtrs.length; i++) {
-              result.data[i] = ptrToFloat32s(dataPtrs[i], length);
-              Module._free(dataPtrs[i]);
-            }
-          }
-
-          if (read === 0) {
-            if (event.data.eof) {
-              break;
-            }
-            // Need more input.
-            return;
-          }
-        } finally {
-          Module._free(ptrToInt32(outputPtr));
+        if (length < 0) {
+          result.error = 'stbvorbis decode failed: ' + length;
+          postMessage(result);
+          funcs.close(statePtr);
+          delete(sessions, event.data.id);
+          // TOOD: Need to free ptrToInt32(outputPtr)?
           Module._free(outputPtr);
+          return;
+        }
+
+        var channels = funcs.channels(statePtr);
+        if (channels > 0) {
+          var dataPtrs = ptrToInt32s(ptrToInt32(outputPtr), channels);
+          result.data = new Array(dataPtrs.length);
+          for (var i = 0; i < dataPtrs.length; i++) {
+            result.data[i] = ptrToFloat32s(dataPtrs[i], length);
+            Module._free(dataPtrs[i]);
+          }
+        }
+
+        Module._free(ptrToInt32(outputPtr));
+        Module._free(outputPtr);
+
+        if (read === 0) {
+          // Need more input.
+          break;
         }
 
         if (result.sampleRate === 0) {
           result.sampleRate = funcs.sampleRate(statePtr);
         }
-
         postMessage(result, result.data.map(function(array) { return array.buffer; }));
       }
 
