@@ -69,14 +69,56 @@
     return copied;
   }
 
+  function concatArrays(arr1, arr2) {
+    var newArr = new Uint8Array(arr1.byteLength + arr2.byteLength);
+
+    if (arr1 instanceof ArrayBuffer) {
+      newArr.set(new Uint8Array(arr1), 0);
+    } else if (arr1 instanceof Uint8Array) {
+      newArr.set(arr1, 0);
+    } else {
+      throw 'not reached';
+    }
+
+    if (arr2 instanceof ArrayBuffer) {
+      newArr.set(new Uint8Array(arr2), arr1.byteLength);
+    } else if (arr2 instanceof Uint8Array) {
+      newArr.set(arr2, arr1.byteLength);
+    } else {
+      throw 'not reached';
+    }
+    return newArr;
+  }
+
+  var sessions = {};
+
   self.addEventListener('message', function(event) {
     initializeP.then(function(funcs) {
-      var statePtr = funcs.open();
-      var input = event.data.buf;
+      var statePtr = null;
+      if (event.data.id in sessions) {
+        statePtr = sessions[event.data.id].state;
+      } else {
+        statePtr = funcs.open();
+        sessions[event.data.id] = {
+          state: statePtr,
+          input: null,
+        };
+      }
+
+      var input = sessions[event.data.id].input;
+      if (input === null) {
+        input = event.data.buf;
+      } else if (event.data.buf) {
+        input = concatArrays(input, event.data.buf);
+      } else {
+        // Empty
+        input = new ArrayBuffer();
+      }
+
       var initMinChunkLength = 65536;
       var minChunkLength = initMinChunkLength;
-      try {
-        while (input.byteLength > 0) {
+      while (input.byteLength > 0) {
+        try {
           var copiedInput = null;
           var chunkLength = Math.min(minChunkLength, input.byteLength);
           if (input instanceof ArrayBuffer) {
@@ -86,6 +128,7 @@
           }
 
           var outputPtr = Module._malloc(4);
+
           var readPtr = Module._malloc(4);
           var length = funcs.decode(statePtr, copiedInput.byteOffset, copiedInput.byteLength, outputPtr, readPtr);
           Module._free(copiedInput.byteOffset);
@@ -93,6 +136,7 @@
           var read = ptrToInt32(readPtr);
           Module._free(readPtr);
           input = input.slice(read);
+          sessions[event.data.id].input = input;
 
           var result = {
             id:         event.data.id,
@@ -105,6 +149,8 @@
           if (length < 0) {
             result.error = 'stbvorbis decode failed: ' + length;
             postMessage(result);
+            funcs.close(statePtr);
+            delete(sessions, event.data.id);
             return;
           }
 
@@ -117,33 +163,42 @@
               Module._free(dataPtrs[i]);
             }
           }
+
+          if (read === 0) {
+            if (event.data.eof) {
+              break;
+            }
+            // Need more input.
+            return;
+          }
+        } finally {
           Module._free(ptrToInt32(outputPtr));
           Module._free(outputPtr);
-
-          if (result.sampleRate === 0) {
-            result.sampleRate = funcs.sampleRate(statePtr);
-          }
-
-          if (result.data.length === 0 || result.sampleRate === 0) {
-            minChunkLength *= 2;
-          } else {
-            minChunkLength = initMinChunkLength;
-          }
-
-          postMessage(result, result.data.map(function(array) { return array.buffer; }));
         }
-      } finally {
-        funcs.close(statePtr);
+
+        if (result.sampleRate === 0) {
+          result.sampleRate = funcs.sampleRate(statePtr);
+        }
+
+        if (result.data.length === 0 || result.sampleRate === 0) {
+          minChunkLength *= 2;
+        } else {
+          minChunkLength = initMinChunkLength;
+        }
+
+        postMessage(result, result.data.map(function(array) { return array.buffer; }));
       }
 
-      var result = {
-        id:         event.data.id,
-        data:       null,
-        sampleRate: 0,
-        eof:        true,
-        error:      null,
-      };
-      postMessage(result);
+      if (event.data.eof) {
+        var result = {
+          id:         event.data.id,
+          data:       null,
+          sampleRate: 0,
+          eof:        true,
+          error:      null,
+        };
+        postMessage(result);
+      }
     });
   });
 })(Module);

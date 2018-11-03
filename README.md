@@ -28,3 +28,28 @@ The given callback is called when decoding proceeded or error happens. The argum
 | `sampleRate` | The sample rate like 44100. |
 | `eof`        | True if the stream ends, otherwise false. |
 | `error`      | An error string if exists, otherwise null. |
+
+### `decodeStream`
+
+```
+stbvorbis.decodeStream(callback: function(event: Object)): function(event: Object)
+```
+
+`decodeStream` decodes the given Ogg/Vorbis stream.
+
+The given callback is called when decoding proceeded or error happens. The argument is an object that has these keys:
+
+| name | description |
+| --- | --- |
+| `data`       | An array of `Float32Array` that represents decoded stream for each channel. |
+| `sampleRate` | The sample rate like 44100. |
+| `eof`        | True if the stream ends, otherwise false. |
+| `error`      | An error string if exists, otherwise null. |
+
+The returned function is used to push input strem. The argument is an object that has these keys:
+
+| name | description |
+| --- | --- |
+| `data` | An array of `ArrayBuffer` or `Uint8Array` that represents encoded stream. |
+| `eof`  | True if the stream ends, otherwise false. |
+

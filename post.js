@@ -64,11 +64,44 @@ var initializeWorkerP = new Promise(function(resolve, reject) {
 // Catch the error once to suppress error messages on console.
 initializeWorkerP.catch(function(e) {});
 
-var requestId = 0;
+stbvorbis.decode = function(buf, outCallback) {
+  var inCallback = stbvorbis.decodeStream(outCallback);
+  inCallback({
+    data: buf,
+    eof:  false,
+  });
+  inCallback({
+    data: null,
+    eof:  true,
+  });
+}
 
-stbvorbis.decode = function(buf, callback) {
+var sessionId = 0;
+var outCallbacks = {};
+
+stbvorbis.decodeStream = function(outCallback) {
+  // A callback that actually sends input data to worker.
+  // This is initialized later.
+  var inCallbackImpl = null;
+
+  // Represents a queue that holds pending input.
+  // This queue is consumed just after inCallbackImpl is initialized.
+  var inputQueue = [];
+
+  // A callback that is called on user side.
+  var inCallback = function(input) {
+    // inCallbackImpl is not initialized yet. Perserve the input at the queue.
+    if (!inCallbackImpl) {
+      inputQueue.push(input)
+      return;
+    }
+    inCallbackImpl(input);
+  };
+
   initializeWorkerP.then(function(worker) {
-    var currentId = requestId;
+    var currentId = sessionId;
+    sessionId++;
+
     var sampleRate = 0;
     var data = [];
     var onmessage = function(event) {
@@ -78,27 +111,28 @@ stbvorbis.decode = function(buf, callback) {
       }
 
       if (result.error) {
-        callback({
+        outCallback({
           data:       null,
           sampleRate: 0,
           eof:        false,
           error:      result.error,
         });
+        worker.removeEventListener('message', onmessage);
         return;
       }
 
       if (result.eof) {
-        worker.removeEventListener('message', onmessage);
-        callback({
+        outCallback({
           data:       null,
           sampleRate: 0,
           eof:        true,
           error:      null,
         });
+        worker.removeEventListener('message', onmessage);
         return;
       }
 
-      callback({
+      outCallback({
         data:       result.data,
         sampleRate: result.sampleRate,
         eof:        false,
@@ -106,9 +140,33 @@ stbvorbis.decode = function(buf, callback) {
       });
     };
     worker.addEventListener('message', onmessage);
-    worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
-    requestId++;
+
+    inCallbackImpl = function(input) {
+      if (input.eof) {
+        worker.postMessage({
+          id:  currentId,
+          buf: null,
+          eof: true,
+        });
+        return;
+      }
+
+      var buf = input.data;
+      worker.postMessage({
+        id:  currentId,
+        buf: buf,
+        eof: false,
+      }, [buf instanceof Uint8Array ? buf.buffer : buf]);
+    };
+
+    // Consume the pending input.
+    for (var i = 0; i < inputQueue.length; i++) {
+      inCallbackImpl(inputQueue[i]);
+    }
+    inputQueue = null;
   });
+
+  return inCallback;
 };
 
 })(); // End of the scope.

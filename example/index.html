@@ -3,17 +3,22 @@
 <script src="./stbvorbis.js"></script>
 <script>
 async function initialize(context) {
-  const buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
+  let buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
   let posInSamples = 0;
-  return new Promise((resolve, reject) => {
-    stbvorbis.decode(buf, function(e) {
+  return new Promise(async (resolve, reject) => {
+    const inCallback = stbvorbis.decodeStream(function(e) {
       if (e.error) {
         reject(e.error);
         return;
       }
 
       if (e.eof) {
+        console.log('encoding done!');
         resolve();
+        return;
+      }
+
+      if (e.data[0].length === 0) {
         return;
       }
 
@@ -39,21 +44,39 @@ async function initialize(context) {
 
       document.getElementById('button').disabled = false;
     });
+
+    // Give input chunks via inCallback.
+    while (buf.byteLength > 0) {
+      const chunkSize = 4096;
+      inCallback({
+        data: buf.slice(0, chunkSize),
+        eof:  false,
+      });
+      buf = buf.slice(chunkSize);
+      await new Promise(r => setTimeout(r, 100));
+    }
+    inCallback({
+      data: null,
+      eof:  true,
+    });
   });
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  var AudioContext = window.AudioContext || window.webkitAudioContext;
-  const context = new AudioContext();
-  try {
-    await initialize(context);
-  } catch(e) {
-    console.error(e);
-    return;
-  }
+  let context = null;
   document.getElementById('button').addEventListener('click', () => {
     const button = document.getElementById('button');
     switch (button.innerText) {
+    case 'Start':
+      var AudioContext = window.AudioContext || window.webkitAudioContext;
+      context = new AudioContext();
+      try {
+        initialize(context);
+      } catch(e) {
+        console.error(e);
+        return;
+      }
+      button.innerText = 'Suspend';
     case 'Resume':
       context.resume();
       button.innerText = 'Suspend';
@@ -66,4 +89,4 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 });
 </script>
-<button id="button" disabled>Suspend</button>
+<button id="button">Start</button>
