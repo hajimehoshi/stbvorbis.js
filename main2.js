@@ -115,12 +115,10 @@
         input = new ArrayBuffer();
       }
 
-      var initMinChunkLength = 65536;
-      var minChunkLength = initMinChunkLength;
       while (input.byteLength > 0) {
         try {
           var copiedInput = null;
-          var chunkLength = Math.min(minChunkLength, input.byteLength);
+          var chunkLength = Math.min(65536, input.byteLength);
           if (input instanceof ArrayBuffer) {
             copiedInput = arrayBufferToHeap(input, 0, chunkLength);
           } else if (input instanceof Uint8Array) {
@@ -178,12 +176,6 @@
 
         if (result.sampleRate === 0) {
           result.sampleRate = funcs.sampleRate(statePtr);
-        }
-
-        if (result.data.length === 0 || result.sampleRate === 0) {
-          minChunkLength *= 2;
-        } else {
-          minChunkLength = initMinChunkLength;
         }
 
         postMessage(result, result.data.map(function(array) { return array.buffer; }));
