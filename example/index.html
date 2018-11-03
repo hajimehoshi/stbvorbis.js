@@ -5,6 +5,7 @@
 async function initialize(context) {
   let buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
   let posInSamples = 0;
+  let timeOffset = -1;
   return new Promise(async (resolve, reject) => {
     const inCallback = stbvorbis.decodeStream(function(e) {
       if (e.error) {
@@ -36,10 +37,13 @@ async function initialize(context) {
           buffer.getChannelData(i).set(e.data[i]);
         }
       }
+      if (timeOffset < 0) {
+        timeOffset = context.currentTime;
+      }
       const source = context.createBufferSource();
       source.buffer = buffer;
       source.connect(context.destination);
-      source.start(posInSamples / e.sampleRate);
+      source.start(timeOffset + posInSamples / e.sampleRate);
       posInSamples += e.data[0].length;
 
       document.getElementById('button').disabled = false;
