@@ -38,6 +38,9 @@ function httpGet(url) {
   });
 }
 
+var sessionId = 0;
+var outCallbacks = {};
+
 var initializeWorkerP = new Promise(function(resolve, reject) {
   if (typeof WebAssembly === 'object') {
     var workerURL = URL.createObjectURL(new Blob(
@@ -55,59 +58,61 @@ var initializeWorkerP = new Promise(function(resolve, reject) {
       [script],
       {type: 'text/javascript'}
     ));
-    resolve(new Worker(workerURL));
+    return new Worker(workerURL);
   }).catch(function(err) {
     reject(new Error('asmjs version is not available (HTTP status: ' + err.status + ' on stbvorbis_asm.js). Deploy stbvorbis_asm.js at the same place as stbvorbis.js.'));
   });
-});
+}).then(function(worker) {
+  var onmessage = function(event) {
+    var result = event.data;
+    var outCallback = outCallbacks[result.id];
+    if (!outCallback) {
+      return;
+    }
 
-// Catch the error once to suppress error messages on console.
-initializeWorkerP.catch(function(e) {});
-
-var requestId = 0;
-
-stbvorbis.decode = function(buf, callback) {
-  initializeWorkerP.then(function(worker) {
-    var currentId = requestId;
-    var sampleRate = 0;
-    var data = [];
-    var onmessage = function(event) {
-      var result = event.data;
-      if (result.id !== currentId) {
-        return;
-      }
-
-      if (result.error) {
-        callback({
-          data:       null,
-          sampleRate: 0,
-          eof:        false,
-          error:      result.error,
-        });
-        return;
-      }
-
-      if (result.eof) {
-        worker.removeEventListener('message', onmessage);
-        callback({
-          data:       null,
-          sampleRate: 0,
-          eof:        true,
-          error:      null,
-        });
-        return;
-      }
-
-      callback({
-        data:       result.data,
-        sampleRate: result.sampleRate,
+    if (result.error) {
+      outCallback({
+        data:       null,
+        sampleRate: 0,
         eof:        false,
+        error:      result.error,
+      });
+      delete(outCallbacks[result.id]);
+      return;
+    }
+
+    if (result.eof) {
+      outCallback({
+        data:       null,
+        sampleRate: 0,
+        eof:        true,
         error:      null,
       });
-    };
-    worker.addEventListener('message', onmessage);
-    worker.postMessage({id: requestId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
-    requestId++;
+      delete(outCallbacks[result.id]);
+      return;
+    }
+
+    outCallback({
+      data:       result.data,
+      sampleRate: result.sampleRate,
+      eof:        false,
+      error:      null,
+    });
+  };
+  worker.addEventListener('message', onmessage);
+  return worker;
+}).catch(
+  // Catch the error once to suppress error messages on console.
+  function(e) {}
+);
+
+stbvorbis.decode = function(buf, outCallback) {
+  var currentId = sessionId;
+  sessionId++;
+  outCallbacks[currentId] = outCallback;
+
+  initializeWorkerP.then(function(worker) {
+    worker.postMessage({id: currentId, buf: buf}, [buf instanceof Uint8Array ? buf.buffer : buf]);
   });
 };
 
