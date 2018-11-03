@@ -50,6 +50,6 @@ The returned function is used to push input strem. The argument is an object tha
 
 | name | description |
 | --- | --- |
-| `data` | An array of `ArrayBuffer` or `Uint8Array` that represents encoded stream. |
+| `data` | `ArrayBuffer` or `Uint8Array` that represents encoded stream. |
 | `eof`  | True if the stream ends, otherwise false. |
 
