@@ -70,6 +70,13 @@
   }
 
   function concatArrays(arr1, arr2) {
+    if (!arr1) {
+      arr1 = new ArrayBuffer();
+    }
+    if (!arr2) {
+      arr2 = new ArrayBuffer();
+    }
+
     var newArr = new Uint8Array(arr1.byteLength + arr2.byteLength);
 
     if (arr1 instanceof ArrayBuffer) {
@@ -105,15 +112,7 @@
         };
       }
 
-      var input = sessions[event.data.id].input;
-      if (input === null) {
-        input = event.data.buf;
-      } else if (event.data.buf) {
-        input = concatArrays(input, event.data.buf);
-      } else {
-        // Empty
-        input = new ArrayBuffer();
-      }
+      var input = concatArrays(sessions[event.data.id].input, event.data.buf);
 
       while (input.byteLength > 0) {
         var copiedInput = null;
