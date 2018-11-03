@@ -73,7 +73,8 @@ int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, float
 
   float** data = (float**)malloc(state->v->channels * sizeof(float*));
   if (data == NULL) {
-    stb_vorbis_close(state->v);
+    // If malloc fails, there is nothing we can do. Just abort.
+    abort();
     return -1;
   }
   for (int i = 0; i < state->v->channels; i++) {
@@ -112,8 +113,7 @@ int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, float
       for (int i = 0; i < state->v->channels; i++) {
         float* newData = (float*)realloc(data[i], data_cap * sizeof(float));
         if (newData == NULL) {
-          // TODO: Free allocated objects correctly?
-          stb_vorbis_close(state->v);
+          abort();
           return -1;
         }
         data[i] = newData;

@@ -147,7 +147,7 @@
           postMessage(result);
           funcs.close(statePtr);
           delete(sessions[event.data.id]);
-          // TOOD: Need to free ptrToInt32(outputPtr)?
+          // No need to free ptrToInt32(outputPtr). Nothing is allocated when error happens.
           Module._free(outputPtr);
           return;
         }
