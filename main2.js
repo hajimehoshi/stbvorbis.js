@@ -112,9 +112,10 @@
         };
       }
 
-      var input = concatArrays(sessions[event.data.id].input, event.data.buf);
+      sessions[event.data.id].input = concatArrays(sessions[event.data.id].input, event.data.buf);
 
-      while (input.byteLength > 0) {
+      while (sessions[event.data.id].input.byteLength > 0) {
+        var input = sessions[event.data.id].input;
         var copiedInput = null;
         var chunkLength = Math.min(65536, input.byteLength);
         if (input instanceof ArrayBuffer) {
@@ -131,8 +132,7 @@
 
         var read = ptrToInt32(readPtr);
         Module._free(readPtr);
-        input = input.slice(read);
-        sessions[event.data.id].input = input;
+        sessions[event.data.id].input = input.slice(read);
 
         var result = {
           id:         event.data.id,
