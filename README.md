@@ -26,7 +26,7 @@ The given callback is called when decoding proceeded or error happens. The argum
 | --- | --- |
 | `data`       | An array of `Float32Array` that represents decoded stream for each channel. |
 | `sampleRate` | The sample rate like 44100. |
-| `eof`        | True if the stream ends, otherwise false. |
+| `eof`        | True if the stream ends, otherwise false. If this is true, `data` is null. |
 | `error`      | An error string if exists, otherwise null. |
 
 ### `decodeStream`
@@ -43,7 +43,7 @@ The given callback is called when decoding proceeded or error happens. The argum
 | --- | --- |
 | `data`       | An array of `Float32Array` that represents decoded stream for each channel. |
 | `sampleRate` | The sample rate like 44100. |
-| `eof`        | True if the stream ends, otherwise false. |
+| `eof`        | True if the stream ends, otherwise false. If this is true, `data` is null. |
 | `error`      | An error string if exists, otherwise null. |
 
 The returned function is used to push input strem. The argument is an object that has these keys:
@@ -51,5 +51,4 @@ The returned function is used to push input strem. The argument is an object tha
 | name | description |
 | --- | --- |
 | `data` | `ArrayBuffer` or `Uint8Array` that represents encoded stream. |
-| `eof`  | True if the stream ends, otherwise false. |
-
+| `eof`  | True if the stream ends, otherwise false. If this is true, `data` is ignored. |
