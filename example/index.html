@@ -28,7 +28,7 @@ async function initialize(context) {
       console.log('length:', e.data[0].length);
       console.log('sampleRate:', e.sampleRate);
 
-      const buffer = context.createBuffer(e.data.length, e.data[0].length, e.sampleRate);
+      const buffer = context.createBuffer(channels, e.data[0].length, e.sampleRate);
       for (let i = 0; i < channels; i++) {
         // copyToChannel might not be available on Safari.
         if (buffer.copyToChannel) {
