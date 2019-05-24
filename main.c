@@ -48,7 +48,7 @@ int stb_vorbis_js_decode(StbVorbisState* state, const uint8 *mem, int len, float
   *read = 0;
   if (!state->v) {
     int tmp_len = 32;
-    while (!state->v && tmp_len < len) {
+    while (!state->v) {
       int tmp_consumed = 0;
       int error = 0;
       if (tmp_len > len) {
