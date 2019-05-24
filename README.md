@@ -4,7 +4,7 @@ A JavaScript port of [stb_vorbis.c](https://github.com/nothings/stb).
 
 ## Usage
 
-Install [Docker](https://www.docker.com/) and run `build.sh`.
+Install [Docker](https://www.docker.com/) and run `build.sh` on Posix or `build.ps1` on Windows.
 
 Copy `build/stbvorbis.js` to your file server and load it via a script tag.
 
