@@ -177,7 +177,7 @@
       }
 
       if (event.data.eof) {
-        var  len = sessions[event.data.id].input.length;
+        var len = sessions[event.data.id].input.length;
         if (len) {
           console.warn('not all the input data was decoded. remaining: ' + len + '[bytes]');
         }
