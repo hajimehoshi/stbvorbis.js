@@ -33,7 +33,7 @@
     fs.open = Module['_stb_vorbis_js_open'];
     fs.close = Module['_stb_vorbis_js_close'];
     fs.channels = Module['_stb_vorbis_js_channels'];
-    fs.sampleRate = Module['_stb_vorbis_js_sampleRate'];
+    fs.sampleRate = Module['_stb_vorbis_js_sample_rate'];
     fs.decode = Module['_stb_vorbis_js_decode'];
     resolve(fs);
   });
