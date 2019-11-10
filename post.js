@@ -39,7 +39,8 @@ function httpGet(url) {
 }
 
 var initializeWorkerP = new Promise(function(resolve, reject) {
-  if (typeof WebAssembly === 'object') {
+  var isiOSSafari = navigator.userAgent.match(/iPhone|iPad|iPod/) && navigator.userAgent.match(/AppleWebKit/);
+  if (typeof WebAssembly === 'object' && !isiOSSafari) {
     var workerURL = URL.createObjectURL(new Blob(
       ['(' + decodeWorker.toString() + ')();'],
       {type: 'text/javascript'}
