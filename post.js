@@ -40,7 +40,7 @@ function httpGet(url) {
 
 var initializeWorkerP = new Promise(function(resolve, reject) {
   // wasm on iOS Safari is STILL unstable even if it is iOS 13
-  var isiOS = navigator.userAgent.match(/iPhone|iPad|iPod/);
+  var isiOS = navigator.userAgent.match(/iPhone|iPad/);
   if (typeof WebAssembly === 'object' && !isiOS) {
     var workerURL = URL.createObjectURL(new Blob(
       ['(' + decodeWorker.toString() + ')();'],
