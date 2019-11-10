@@ -4,11 +4,9 @@ A JavaScript port of [stb_vorbis.c](https://github.com/nothings/stb).
 
 ## Usage
 
-Install [Docker](https://www.docker.com/) and run `build.sh` on Posix or `build.ps1` on Windows.
+Download files from [Releases](https://github.com/hajimehoshi/stbvorbis.js/releases). Copy `stbvorbis.js` and `stbvorbis_asm.js` to your file server and load `stbvorbis.js` via a script tag.
 
-Copy `build/stbvorbis.js` to your file server and load it via a script tag.
-
-This library basically uses WebAssembly. stbvorbis.js also has asm.js implementation for environments where WebAssembly is not available. On iOS, stbvorbis.js always uses asm.js instead due to instability of iOS WebAssembly implementation. Copy `build/stbvorbis_asm.js` to the same directory as `build/stbvorbis.js` so that asm.js version is used as fallback.
+This library basically uses WebAssembly. stbvorbis.js also has asm.js implementation for environments where WebAssembly is not available. On iOS, stbvorbis.js always uses asm.js instead due to instability of iOS WebAssembly implementation. If `stbvorbis_asm.js` is in the same directory as `stbvorbis.js`, asm.js version works as fallback.
 
 ## API
 
@@ -52,3 +50,7 @@ The returned function is used to push input strem. The argument is an object tha
 | --- | --- |
 | `data` | `ArrayBuffer` or `Uint8Array` that represents encoded stream. |
 | `eof`  | True if the stream ends, otherwise false. If this is true, `data` is ignored. |
+
+## Compile
+
+Install [Docker](https://www.docker.com/) and run `build.sh` on Posix or `build.ps1` on Windows.
