@@ -1,4 +1,4 @@
-FROM apiaryio/emcc:1.38.11
+FROM trzeci/emscripten-upstream:sdk-tag-1.39.16-64bit
 
 RUN apt-get update && \
         apt-get install -y \
