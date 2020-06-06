@@ -3,8 +3,7 @@
 <script src="./stbvorbis.js"></script>
 <script>
 async function initialize(context) {
-  // let buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
-  let buf = await (await fetch('./niji.ogg')).arrayBuffer();
+  let buf = await (await fetch('./ragtime.ogg')).arrayBuffer();
   let posInSamples = 0;
   let timeOffset = -1;
   return new Promise(async (resolve, reject) => {
